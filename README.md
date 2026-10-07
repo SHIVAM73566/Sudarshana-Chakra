@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="assets/sudarshana_chakra_logo_core.png" alt="Sudarshana Chakra Logo" width="420" />
+![Sudarshana Chakra AI](assets/sudarshana_chakra_logo_core.png)
 
 ### *The Self-Evolving, Multimodal Personal AI Desktop Environment*
 

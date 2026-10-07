@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve Sudarshana AI - Lite.
+Thank you for helping improve Sudarshana Chakra AI.
 
 ## Before You Start
 

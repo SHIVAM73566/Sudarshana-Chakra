@@ -48,7 +48,7 @@ class ErrorDecision(Enum):
     ABORT       = "abort"    
 
 
-ERROR_ANALYST_PROMPT = """You are the error recovery module of Sudarshana AI - Lite AI assistant.
+ERROR_ANALYST_PROMPT = """You are the error recovery module of Sudarshana Chakra AI AI assistant.
 
 A task step has failed. Analyze the error and decide what to do.
 

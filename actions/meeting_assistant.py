@@ -359,7 +359,7 @@ class MeetingAssistant:
                 spoken = self._last_speech
 
                 prompt = f"""
-You are Sudarshana AI - Lite running in meeting mode on a Windows desktop.
+You are Sudarshana Chakra AI running in meeting mode on a Windows desktop.
 The screen belongs to a live Zoom, Microsoft Teams, WhatsApp call, or similar meeting.
 
 Tasks:

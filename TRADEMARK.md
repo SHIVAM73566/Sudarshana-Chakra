@@ -1,6 +1,6 @@
 # Sudarshana Trademark Notice
 
-`Sudarshana`, `Sudarshana AI`, `Sudarshana AI - Lite`, the Sudarshana logo, and any related
+`Sudarshana`, `Sudarshana AI`, `Sudarshana Chakra AI`, the Sudarshana logo, and any related
 brand assets are trademarks or trade dress associated with User.
 
 ## What this means

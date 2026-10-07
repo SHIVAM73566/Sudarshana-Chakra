@@ -15,7 +15,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-PROJECT_NAME = "Sudarshana AI - Lite"
+PROJECT_NAME = "Sudarshana Chakra AI"
 DEFAULT_OUTPUT_DIR = Path.home() / "Downloads"
 
 

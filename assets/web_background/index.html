@@ -61,7 +61,7 @@
     let moonBokehMesh, spaceDustGroup;
     let glowSprite, spiralMat, outerLine;
 
-    // ——— REACTIVE SUDARSHANA EVO STATE CONTROLLER ———
+    // ——— REACTIVE Sudarshana Chakra STATE CONTROLLER ———
     let currentState = "IDLE";
     const STATE_COLORS = {
       LISTENING:  { hot: 0x80ffff, mid: 0x00e5ff, dim: 0x0088aa }, // Luminous Cyan
@@ -71,8 +71,8 @@
       WORKING:    { hot: 0x00f0ff, mid: 0x0090ff, dim: 0x0040aa }, // Cyber Blue
       MUTED:      { hot: 0xff9999, mid: 0xff3b30, dim: 0x881111 }, // Crimson Red
       SCANNING:   { hot: 0xa0ffea, mid: 0x00f0ff, dim: 0x0088aa }, // Cyber Cyan Matrix
-      ONLINE:     { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Sudarshana Evo Quantum White & Cyber Cyan
-      IDLE:       { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Sudarshana Evo Quantum White & Cyber Cyan
+      ONLINE:     { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Sudarshana Chakra Quantum White & Cyber Cyan
+      IDLE:       { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Sudarshana Chakra Quantum White & Cyber Cyan
     };
 
     let targetColorHot = new THREE.Color(0xffffff);
@@ -734,7 +734,7 @@
     window.setSudarshanaState = function(state) {
       if (!state) return;
       currentState = String(state).toUpperCase();
-      console.log("Sudarshana Evo State:", currentState);
+      console.log("Sudarshana Chakra State:", currentState);
 
       const pal = STATE_COLORS[currentState] || STATE_COLORS.IDLE;
       targetColorHot.setHex(pal.hot);

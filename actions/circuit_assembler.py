@@ -1,5 +1,5 @@
 """
-Sudarshana AI Evo - Circuit Assembler & Hardware Vision Architect.
+Sudarshana Chakra AI - Circuit Assembler & Hardware Vision Architect.
 Analyzes electronic components on screen or from voice input, resolves pin-to-pin wiring,
 safety warnings, and assembly steps, and launches the Holographic Circuit HUD.
 """

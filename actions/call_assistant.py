@@ -2,7 +2,7 @@
 Autonomous AI Call Attendant & Call Screening Assistant ("Call Proxy")
 Part of Sudarshana AI.
 
-Allows Sudarshana AI Evo to autonomously answer voice/video calls on Windows
+Allows Sudarshana Chakra AI to autonomously answer voice/video calls on Windows
 (WhatsApp, Teams, Phone Link, Zoom, Skype, etc.), introduce itself as the user's
 AI executive assistant, converse with the caller, transcribe the dialogue in real time,
 record messages and urgency, and deliver a structured debriefing card.
@@ -482,7 +482,7 @@ class CallAssistant:
         api_key = _get_api_key()
         history_str = "\n".join(f"{t['speaker']}: {t['text']}" for t in self.transcript[-6:])
 
-        prompt = f"""You are Sudarshana AI Evo, an executive AI assistant answering a live phone call on behalf of {self.owner_name}.
+        prompt = f"""You are Sudarshana Chakra AI, an executive AI assistant answering a live phone call on behalf of {self.owner_name}.
 {self.owner_name} is currently occupied and unavailable to pick up.
 Caller: {self.caller_name} (App: {self.app_name}).
 
@@ -561,7 +561,7 @@ Rules:
             try:
                 from google import genai
                 client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
-                sum_prompt = f"""Summarize this phone call screened by Sudarshana AI Evo on behalf of {self.owner_name}:
+                sum_prompt = f"""Summarize this phone call screened by Sudarshana Chakra AI on behalf of {self.owner_name}:
 Caller: {self.caller_name}
 Duration: {duration_str}
 

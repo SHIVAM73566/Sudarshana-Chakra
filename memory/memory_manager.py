@@ -219,7 +219,7 @@ def extract_memory(user_text: str, sudarshana_text: str, api_key: str = "") -> d
             f"                  favorite_game, favorite_sport, favorite_book, favorite_artist,\n"
             f"                  favorite_country, hobbies, interests, dislikes, etc.\n"
             f"  projects      → projects being built, ongoing work, goals, ideas in progress\n"
-            f"                  (e.g. sudarshana_ai: 'Building a Sudarshana AI - Lite assistant')\n"
+            f"                  (e.g. sudarshana_ai: 'Building a Sudarshana Chakra AI assistant')\n"
             f"  relationships → people mentioned: friends, family, partner, colleagues\n"
             f"                  (e.g. best_friend_alex: 'Best friend, met in university')\n"
             f"  wishes        → future plans, things to buy, travel plans, dreams\n"
@@ -232,7 +232,7 @@ def extract_memory(user_text: str, sudarshana_text: str, api_key: str = "") -> d
             f"Format:\n"
             f'{{"identity":{{"name":{{"value":"User"}}}},\n'
             f' "preferences":{{"favorite_color":{{"value":"blue"}}}},\n'
-            f' "projects":{{"sudarshana_ai":{{"value":"Sudarshana AI - Lite assistant"}}}},\n'
+            f' "projects":{{"sudarshana_ai":{{"value":"Sudarshana Chakra AI assistant"}}}},\n'
             f' "relationships":{{"friend_alex":{{"value":"close friend"}}}},\n'
             f' "wishes":{{"buy_guitar":{{"value":"wants an acoustic guitar"}}}},\n'
             f' "notes":{{"works_at_night":{{"value":"usually active late at night"}}}}}}\n\n'

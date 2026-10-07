@@ -23,7 +23,7 @@ try:
 except Exception:
     pass
 
-PROJECT_NAME = "Sudarshana AI - Lite"
+PROJECT_NAME = "Sudarshana Chakra AI"
 DEFAULT_OUTPUT_DIR = Path.home() / "Downloads"
 
 

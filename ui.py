@@ -7644,7 +7644,7 @@ class BootSequenceOverlay(QWidget):
                 p['x'] = p['orig_x'] + (cx - p['orig_x']) * ease
                 p['y'] = p['orig_y'] + (cy - 30.0 - p['orig_y']) * ease
 
-        # Phase 4 (2.5s to 3.2s): AI - EVO entrance with impact
+        # Phase 4 (2.5s to 3.2s): AI - CHAKRA entrance with impact
         if self._time >= 2.5 and not self._played_impact:
             self._played_impact = True
             try:
@@ -7814,7 +7814,7 @@ class BootSequenceOverlay(QWidget):
                 painter.drawText(rect_sudarshana, Qt.AlignmentFlag.AlignCenter, "SUDARSHANA")
 
             # -------------------------------------------------------------
-            # 4. DRAW "AI - EVO" WITH MAXIMUM IMPACT (>= 2.5s)
+            # 4. DRAW "AI - CHAKRA" WITH MAXIMUM IMPACT (>= 2.5s)
             # -------------------------------------------------------------
             if self._time >= 2.5:
                 evo_dt = self._time - 2.5
@@ -7851,10 +7851,10 @@ class BootSequenceOverlay(QWidget):
                 evo_glow = QColor(0, 240, 255, int(evo_alpha * 0.6))
                 painter.setPen(evo_glow)
                 for ox, oy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    painter.drawText(QRectF(-badge_w / 2.0 + 130, -badge_h / 2.0, 115, badge_h).translated(ox, oy), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "EVO")
+                    painter.drawText(QRectF(-badge_w / 2.0 + 130, -badge_h / 2.0, 115, badge_h).translated(ox, oy), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "CHAKRA")
 
                 painter.setPen(QColor(0, 240, 255, evo_alpha))
-                painter.drawText(QRectF(-badge_w / 2.0 + 130, -badge_h / 2.0, 115, badge_h), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "EVO")
+                painter.drawText(QRectF(-badge_w / 2.0 + 130, -badge_h / 2.0, 115, badge_h), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "CHAKRA")
 
                 painter.restore()
 

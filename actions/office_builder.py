@@ -16,7 +16,7 @@ from pathlib import Path
 from actions.ppt_template_workflow import infer_presentation_profile
 
 
-PROJECT_NAME = "Sudarshana AI - Lite"
+PROJECT_NAME = "Sudarshana Chakra AI"
 DEFAULT_OUTPUT_DIR = Path.home() / "Desktop" / "SudarshanaAI"
 
 

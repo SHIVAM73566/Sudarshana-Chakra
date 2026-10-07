@@ -476,5 +476,5 @@ def _spotify_mcp_action(parameters: dict) -> str:
 
 
 def spotify_mcp_controller(parameters: dict | None = None) -> str:
-    """Explicit Spotify MCP entry point for the optional Evo feature."""
+    """Explicit Spotify MCP entry point for the optional premium feature."""
     return _spotify_mcp_action(parameters or {})

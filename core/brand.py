@@ -21,7 +21,7 @@ class _Brand:
     name: str = "Sudarshana Chakra"
     codename: str = "SudarshanaChakra"
     organization: str = "Sudarshana"
-    tagline: str = "Sudarshana Chakra — Immutable Edition"
+    tagline: str = "Sudarshana Chakra — Autonomous Desktop Operating Intelligence"
 
 
 BRAND = _Brand()
