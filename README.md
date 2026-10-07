@@ -240,19 +240,32 @@ python package_release.py
 
 The archive is written to `dist/Sudarshana_Chakra_AI_v<version>.zip`.
 
+### 📦 Current Release Snapshot
+
+- **File:** `dist/Sudarshana_Chakra_AI_v1.0.0.zip`
+- **Contents:** source, assets, launchers (`start_sudarshana.bat`, `bootstrap.ps1`), installer spec, `.env.example` template, docs.
+- **Verified clean:** no `.env`, no personal `api_keys.json`, no `.git` history, no tests, no virtual environments, no caches.
+- **Integrity:** SHA-256 fingerprint is printed after every build — verify your download against it before installing.
+
+### 🗺️ Multi-Platform Note
+
+- Sudarshana Chakra is built for **Windows 10/11 (64-bit)** with Python 3.11/3.12.
+- `bootstrap.ps1` auto-installs Python, Node.js (required for the Spotify MCP server), creates `./.venv`, installs `requirements.txt`, and prepares Playwright Chromium.
+- On systems without a microphone, voice commands degrade to typed text input and the voice lock can be unlocked with the text master password.
+
 ---
 
 ## 📄 License
 
-**Personal & Private Local Use Only — No Distribution.**
+**Purchased Personal Install — Source-Available Commercial EULA.**
 
-This project is licensed under the **Sudarshana Chakra Source-Available Personal Use License**.
+This project is licensed under the **Sudarshana Chakra Commercial End-User License** (see [LICENSE](LICENSE) for full terms).
 
-- ✅ **Allowed:** You may download, clone, inspect, build, and run the software locally strictly on your own personal device for private, personal, educational, and research use.
-- 🚫 **Strictly Prohibited (No Distribution):** You may **NOT** distribute, redistribute, re-upload, mirror, share, transmit, sublicense, or publish this software, repository, binaries, or derivative works anywhere (including other Git hosts, public repositories, or cloud platforms). The only official distribution source is this repository.
-- 🚫 **Strictly Prohibited (No Commercial Use):** You may **NOT** sell, rent, monetize, bundle, commercialize, or host this software as a paid SaaS/cloud service.
+- ✅ **Allowed:** You may install and run Sudarshana Chakra on one desktop computer you own, inspect the included source, and modify it privately for your own personal use.
+- 🚫 **Prohibited:** You may **NOT** redistribute, re-upload, mirror, sublicense, or re-sell the software, its source, binaries, or repackaged editions. You may **NOT** strip or bypass the locked brand assets, the permanent companion avatar, the biometric voice lock, or any license notices.
+- 🛒 **Purchasing:** The official sale channel is the storefronts operated by the author under [github.com/SHIVAM73566/Sudarshana-Chakra](https://github.com/SHIVAM73566/Sudarshana-Chakra). One purchase = one personal installation.
 
-For full terms and legal conditions, see the [LICENSE](LICENSE) file. For commercial licensing inquiries, reach out via [Discord](https://discord.gg/gEYmJKKtq3).
+For commercial/OEM or redistribution rights, contact the author through the official repository above.
 
 <div align="center">
 <b>Sudarshana Chakra</b> • Built with intelligence, precision, and autonomy.

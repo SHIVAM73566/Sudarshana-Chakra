@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 
-REMOTE = "https://github.com/titechprabhasolutions/Sudarshana---personal.git"
+REMOTE = "https://github.com/SHIVAM73566/Sudarshana-Chakra.git"
 BRANCH = "main"
 
 

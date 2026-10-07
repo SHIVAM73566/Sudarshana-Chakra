@@ -442,7 +442,7 @@ class GlobeWindow(QWidget):
         self.raise_()
         if self._web_view and self._is_page_loaded:
             self._web_view.page().runJavaScript("if (window.SudarshanaGlobe && window.SudarshanaGlobe.resume) window.SudarshanaGlobe.resume();")
-            carto_fix = 'if (window.SudarshanaGlobe && window.SudarshanaGlobe.updateCartoKey) { window.SudarshanaGlobe.updateCartoKey("cb1_3xgr_1_35c1dc6a9a9b23cb25386cb6"); }'
+            carto_fix = 'if (window.SudarshanaGlobe && window.SudarshanaGlobe.updateCartoKey) { window.SudarshanaGlobe.updateCartoKey(""); }'
             self._web_view.page().runJavaScript(carto_fix)
             if mode:
                 self._web_view.page().runJavaScript(f"if (window.SudarshanaGlobe && window.SudarshanaGlobe.switchMode) window.SudarshanaGlobe.switchMode('{mode}');")

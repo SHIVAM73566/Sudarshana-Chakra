@@ -974,7 +974,7 @@
             });
 
             // Fast, dark, high-contrast CartoDB Dark Matter tiles (Cloudflare Edge CDN, street precision)
-            const CARTO_API_KEY = "cb1_3xgr_1_35c1dc6a9a9b23cb25386cb6";
+            const CARTO_API_KEY = ""; // optional CARTO API key (remove to use public tiles)
             const cartoUrl = CARTO_API_KEY 
                 ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}&v=2`
                 : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -2100,7 +2100,7 @@
 
         function resetView() {
             if (tileLayerStreet && map2D) {
-                const CARTO_API_KEY = "cb1_3xgr_1_35c1dc6a9a9b23cb25386cb6";
+                const CARTO_API_KEY = ""; // optional CARTO API key (remove to use public tiles)
                 tileLayerStreet.setUrl(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}&v=2`);
                 tileLayerStreet.redraw();
             }
@@ -2162,7 +2162,8 @@
             resetView: () => resetView(),
             updateCartoKey: (k) => {
                 if (tileLayerStreet) {
-                    tileLayerStreet.setUrl(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${k}&v=2`);
+                    const base = k ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${k}&v=2` : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                    tileLayerStreet.setUrl(base);
                     tileLayerStreet.redraw();
                 }
             },
