@@ -5283,7 +5283,7 @@ def main():
     except Exception as exc:
         _startup_log(f"GitHub update skipped: {exc}")
     _ensure_desktop_shortcut()
-    ui = SudarshanaUI(str(BASE_DIR / "assets" / "sudarshana_chakra_logo_core.png"), show_immediately=True)
+    ui = SudarshanaUI(str(BASE_DIR / "assets" / "sudarshana_chakra_ai_logo.png"), show_immediately=True)
     dashboard = None
     dashboard_enabled = DashboardServer is not None and not _is_port_in_use(8000)
     if DashboardServer is not None and not dashboard_enabled:

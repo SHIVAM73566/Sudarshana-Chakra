@@ -53,7 +53,7 @@ _OVERRIDE_JSON_KEYS = (
 
 # The core brand logo is immutable too: any attempt to point the logo/icon at a
 # different file (via env or config) is a brand-integrity violation.
-_CANONICAL_LOGO_SUFFIX = "sudarshana_chakra_logo_core.png"
+_CANONICAL_LOGO_SUFFIX = "sudarshana_chakra_ai_logo.png"
 _LOGO_OVERRIDE_ENV_KEYS = (
     "SUDARSHANA_LOGO",
     "SUDARSHANA_LOGO_PATH",

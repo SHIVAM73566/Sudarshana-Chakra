@@ -32,12 +32,12 @@ from core.brand_logo_asset import (
 BASE_DIR = Path(__file__).resolve().parent.parent
 ASSETS_DIR = BASE_DIR / "assets"
 
-LOGO_ASSET = ASSETS_DIR / "sudarshana_chakra_logo_core.png"
+LOGO_ASSET = ASSETS_DIR / "sudarshana_chakra_ai_logo.png"
 ICON_ASSET = ASSETS_DIR / "app_icon_core.png"
 FAVICON_ASSET = ASSETS_DIR / "favicon.ico"
 
 # Canonical, relative web path used by HTML dashboards and front-end markup.
-WEB_LOGO_PATH = "/assets/sudarshana_chakra_logo_core.png"
+WEB_LOGO_PATH = "/assets/sudarshana_chakra_ai_logo.png"
 WEB_ICON_PATH = "/assets/app_icon_core.png"
 WEB_FAVICON_PATH = "/assets/favicon.ico"
 

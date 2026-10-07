@@ -614,7 +614,7 @@ class DashboardServer:
             return RedirectResponse(_CRYPTOJS_CDN)
 
         _BRAND_ASSETS = {
-            "sudarshana_chakra_logo_core.png": "image/png",
+            "sudarshana_chakra_ai_logo.png": "image/png",
             "app_icon_core.png": "image/png",
             "favicon.ico": "image/x-icon",
         }

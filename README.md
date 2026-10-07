@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Sudarshana Chakra AI](assets/sudarshana_chakra_logo_core.png)
+![Sudarshana Chakra AI](assets/sudarshana_chakra_ai_logo.png)
 
 ### *The Self-Evolving, Multimodal Personal AI Desktop Environment*
 
@@ -78,12 +78,12 @@
 
 ### 10. 🪪 Immutable Brand, Logo, Avatar & Companion HUD
 - **Tamper-proof identity:** the application name `Sudarshana Chakra` and codename `SudarshanaChakra` are frozen at boot (`core/brand.py`); any attempt to alter them aborts startup.
-- **Locked brand logo:** the primary logo `assets/sudarshana_chakra_logo_core.png` (plus the square `assets/app_icon_core.png` and browser `assets/favicon.ico`) is embedded as a Base64 constant, self-heals if deleted or modified, is verified against its SHA-256 fingerprint at boot (`core/brand_logo.py`), and is written read-only. There is no setting, dashboard control or UI property to rename, override or delete it; any config/env attempt to point the logo elsewhere is treated as a brand-integrity violation.
+- **Locked brand logo:** the primary logo `assets/sudarshana_chakra_ai_logo.png` (plus the square `assets/app_icon_core.png` and browser `assets/favicon.ico`) is embedded as a Base64 constant, self-heals if deleted or modified, is verified against its SHA-256 fingerprint at boot (`core/brand_logo.py`), and is written read-only. There is no setting, dashboard control or UI property to rename, override or delete it; any config/env attempt to point the logo elsewhere is treated as a brand-integrity violation.
 - **Permanent guardian avatar:** the companion portrait `assets/sudarshana_avatar_core.png` is embedded as a Base64 constant, self-heals if deleted or modified, and is re-verified against its SHA-256 fingerprint (`core/avatar.py`). It is rendered inside a glowing, non-removable circular HUD (rotating telemetry rings, scanlines, live gauges) in the centre-left of the dashboard, carrying the badges **SUDARSHANA COMPANION — ACTIVE**, **BIOMETRIC SYNC** and **LOCK STATE: SECURE 🔒**. The image cannot be swapped, overlaid or deleted; only the textual display name is user-changeable.
 - **Installing/refreshing the official logo:**
 
   ```powershell
-  python tools/set_brand_logo.py --source path/to/sudarshana_chakra_logo.png
+  python tools/set_brand_logo.py --source path/to/sudarshana_chakra_ai_logo.png
   ```
 
   This writes the read-only assets, regenerates `core/brand_logo_asset.py` (embedded copies + SHA-256), and rebuilds the 16:9 banner and square icon.

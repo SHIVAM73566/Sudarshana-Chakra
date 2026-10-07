@@ -15,7 +15,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-LOGO_PATH = BASE_DIR / "assets" / "sudarshana_chakra_logo_core.png"
+LOGO_PATH = BASE_DIR / "assets" / "sudarshana_chakra_ai_logo.png"
 AVATAR_PATH = BASE_DIR / "assets" / "sudarshana_avatar_core.png"
 OUT_DIR = BASE_DIR / "promos"
 

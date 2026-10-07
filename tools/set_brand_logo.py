@@ -5,7 +5,7 @@ asset variants. It:
 
   1. Loads a source image (the cinematic Sudarshana Chakra logo).
   2. Writes the canonical, *read-only* assets:
-        assets/sudarshana_chakra_logo_core.png   (primary banner, ~16:9)
+        assets/sudarshana_chakra_ai_logo.png   (primary banner, ~16:9)
         assets/app_icon_core.png                 (square desktop/tray icon)
         assets/favicon.ico                       (multi-size browser favicon)
   3. Regenerates ``core/brand_logo_asset.py`` with embedded Base64 copies and
@@ -35,12 +35,12 @@ from PIL import Image
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ASSETS_DIR = BASE_DIR / "assets"
-LOGO_PATH = ASSETS_DIR / "sudarshana_chakra_logo_core.png"
+LOGO_PATH = ASSETS_DIR / "sudarshana_chakra_ai_logo.png"
 ICON_PATH = ASSETS_DIR / "app_icon_core.png"
 FAVICON_PATH = ASSETS_DIR / "favicon.ico"
 EMBED_PATH = BASE_DIR / "core" / "brand_logo_asset.py"
 
-DEFAULT_SOURCE = ASSETS_DIR / "sudarshana_chakra_logo_core.png"
+DEFAULT_SOURCE = ASSETS_DIR / "sudarshana_chakra_ai_logo.png"
 DEFAULT_ICON_SOURCE = None
 
 ICON_SIZE = 512
@@ -160,7 +160,7 @@ FAVICON_SHA256 = "{_sha256(favicon_bytes)}"
 def main() -> None:
     ap = argparse.ArgumentParser(description="Install the immutable Sudarshana Chakra brand logo.")
     ap.add_argument("--source", type=Path, default=DEFAULT_SOURCE,
-                    help="primary logo image (default: the installed assets/sudarshana_chakra_logo_core.png)")
+                    help="primary logo image (default: the installed assets/sudarshana_chakra_ai_logo.png)")
     ap.add_argument("--icon-source", type=Path, default=None,
                     help="optional square chakra icon source (default: derive from --source)")
     ap.add_argument("--no-frame", action="store_true",
