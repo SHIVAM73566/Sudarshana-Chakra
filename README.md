@@ -247,6 +247,24 @@ The archive is written to `dist/Sudarshana_Chakra_AI_v<version>.zip`.
 - **Verified clean:** no `.env`, no personal `api_keys.json`, no `.git` history, no tests, no virtual environments, no caches.
 - **Integrity:** SHA-256 fingerprint is printed after every build — verify your download against it before installing.
 
+### 🎨 Product Images & Promo Kit
+
+Ready-to-upload 16:9 (1920×1080) storefront visuals live in [`/promos/`](promos/) — generated from the real logo + locked avatar via `tools/build_promo_images.py` (customizable brand palette; commas, colors and callouts configurable in one place).
+
+| File | Use |
+| --- | --- |
+| `chakra_ai_cover_16x9.png` / `codester_banner_chakra_ai.png` | Landing cover — identity, tagline, feature callouts |
+| `chakra_dashboard_voice_auth_16x9.png` / `sellanycode_banner_chakra_ai.png` | Dashboard view — voice-auth portal, `LOCK STATE: SECURE` |
+| `chakra_marketplace_zip_proof_16x9.png` / `payhip_preview_chakra_ai.png` | Market-ready package proof — `READY TO SELL` ribbon |
+| `chakra_dual_llm_16x9.png` / `code_robotics_preview_chakra_ai.png` | Gemini + NVIDIA NIM dual-engine view |
+| `chakra_self_healing_16x9.png` | Autonomous self-healing system view |
+
+Regenerate any image after a branding change:
+
+```powershell
+python tools/build_promo_images.py
+```
+
 ### 🗺️ Multi-Platform Note
 
 - Sudarshana Chakra is built for **Windows 10/11 (64-bit)** with Python 3.11/3.12.
