@@ -46,6 +46,6 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     uac_admin=True,
-    icon=os.path.join(cwd, 'assets/Sudarshana_Lite_Logo.ico') if os.path.exists(os.path.join(cwd, 'assets/Sudarshana_Lite_Logo.ico')) else None,
+    icon=os.path.join(cwd, 'assets/favicon.ico') if os.path.exists(os.path.join(cwd, 'assets/favicon.ico')) else None,
     version=os.path.join(cwd, 'version_setup.txt') if os.path.exists(os.path.join(cwd, 'version_setup.txt')) else None
 )

@@ -24,10 +24,10 @@ try:
 except Exception:
     pass
 
-# Immutable avatar: reinstate the locked portrait asset if deleted/replaced.
+# Immutable brand logo: self-heal the locked logo/icon/favicon if tampered with.
 try:
-    from core.avatar import ensure_avatar_asset
-    ensure_avatar_asset()
+    from core.brand_logo import assert_brand_asset_integrity
+    assert_brand_asset_integrity()
 except Exception:
     pass
 
@@ -205,7 +205,7 @@ def _ensure_desktop_shortcut() -> None:
         desktop_dir.mkdir(parents=True, exist_ok=True)
         shortcut_path = desktop_dir / "Sudarshana Chakra.lnk"
         script_path = BASE_DIR / "main.py"
-        icon_path = BASE_DIR / "assets" / "Sudarshana_Lite_Logo.ico"
+        icon_path = BASE_DIR / "assets" / "favicon.ico"
 
         if not icon_path.exists():
             icon_path = None
@@ -5283,7 +5283,7 @@ def main():
     except Exception as exc:
         _startup_log(f"GitHub update skipped: {exc}")
     _ensure_desktop_shortcut()
-    ui = SudarshanaUI(str(BASE_DIR / "assets" / "Sudarshana_Lite_Logo.png"), show_immediately=True)
+    ui = SudarshanaUI(str(BASE_DIR / "assets" / "sudarshana_chakra_logo_core.png"), show_immediately=True)
     dashboard = None
     dashboard_enabled = DashboardServer is not None and not _is_port_in_use(8000)
     if DashboardServer is not None and not dashboard_enabled:

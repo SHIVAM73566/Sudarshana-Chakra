@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sudarshana Evo Remote</title>
+  <title>Sudarshana Chakra Remote</title>
+  <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+  <link rel="icon" type="image/png" href="/assets/app_icon_core.png">
   <script src="/static/crypto.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,8 +57,25 @@
       justify-content: space-between;
       gap: 12px;
     }
+    .brand-logo {
+      display: block;
+      width: 100%;
+      max-width: 200px;
+      max-height: 78px;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.45));
+    }
+    .brand-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
     .logo {
-      font-size: 20px;
+      font-size: 16px;
       font-weight: 800;
       letter-spacing: 0.25em;
       text-transform: uppercase;
@@ -433,12 +452,15 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="logo"><em>Sudarshana Evo</em></div>
+        <div class="brand-col">
+          <img class="brand-logo" src="/assets/sudarshana_chakra_logo_core.png" alt="Sudarshana Chakra AI">
+          <div class="logo"><em>SUDARSHANA CHAKRA</em> AI</div>
+        </div>
         <div class="badge">Online</div>
       </div>
       <div class="nav">
         <div class="nav-item active">Dashboard</div>
-        <div class="nav-item">Sudarshana Evo Home</div>
+        <div class="nav-item">Sudarshana Chakra Home</div>
         <div class="nav-item">Settings</div>
       </div>
       <div class="status-card">
@@ -457,8 +479,8 @@
     <section class="main-panel">
       <div class="topbar">
         <div>
-          <div class="page-title">Sudarshana Evo Home</div>
-          <div class="page-subtitle">Control your home with Sudarshana Evo.</div>
+          <div class="page-title">Sudarshana Chakra Home</div>
+          <div class="page-subtitle">Control your home with Sudarshana Chakra.</div>
         </div>
         <div class="top-actions">
           <button id="vlock" class="badge" onclick="doVoiceLock()" title="Toggle voice biometric authorization"
@@ -565,11 +587,11 @@
             <div class="voice-header">
               <div>
                 <div class="section-title">Voice Control</div>
-                <div class="section-subtitle">Use Sudarshana Evo voice commands to control devices quickly.</div>
+                <div class="section-subtitle">Use Sudarshana Chakra voice commands to control devices quickly.</div>
               </div>
               <div class="status-pill"><span class="dot"></span>Listening</div>
             </div>
-            <div class="voice-note">Say “Sudarshana Evo” followed by your command, or type it below.</div>
+            <div class="voice-note">Say “Sudarshana Chakra” followed by your command, or type it below.</div>
             <div class="voice-actions">
               <button class="btn btn-secondary" onclick="doWake()">Wake</button>
               <button class="btn btn-send" onclick="doSend()">Send</button>
@@ -578,7 +600,7 @@
         </div>
       </div>
       <footer>
-        <input id="inp" placeholder="Send a command to Sudarshana Evo…" autocomplete="off">
+        <input id="inp" placeholder="Send a command to Sudarshana Chakra…" autocomplete="off">
         <label class="btn-attach" for="file-inp" title="Send file">📎</label>
         <input type="file" id="file-inp" multiple accept="*/*" style="display:none">
         <button id="mic-btn" onclick="doMic()" title="Voice command">🎤</button>
@@ -644,7 +666,7 @@
     const _wsUrl   = `${_wsProto}://${location.host}/ws?token=${encodeURIComponent(_authToken)}`;
     const ws       = new WebSocket(_wsUrl);
 
-    ws.onopen    = () => { sys('Remote session active.'); toast('Connected to Sudarshana Evo'); };
+    ws.onopen    = () => { sys('Remote session active.'); toast('Connected to Sudarshana Chakra'); };
     ws.onclose   = () => sys('Connection lost — refresh to reconnect.');
     ws.onerror   = () => sys('Connection error.');
     ws.onmessage = (e) => {
@@ -668,7 +690,7 @@
       const d = document.createElement('div');
       if (speaker === 'sudarshana evo') {
         d.className = 'msg msg-j';
-        d.innerHTML = `<div class="lbl">Sudarshana Evo</div>${esc(text)}`;
+        d.innerHTML = `<div class="lbl">Sudarshana Chakra</div>${esc(text)}`;
       } else {
         d.className = 'msg msg-u';
         d.innerHTML = `<div class="lbl">You</div>${esc(text)}`;

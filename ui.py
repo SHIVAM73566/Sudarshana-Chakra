@@ -73,8 +73,9 @@ CONFIG_DIR = get_user_data_dir() / "config"
 API_FILE   = CONFIG_DIR / "api_keys.json"
 APP_SETTINGS_FILE = CONFIG_DIR / "app_settings.json"
 DISCORD_SETTINGS_FILE = CONFIG_DIR / "discord_bot.json"
-LOGO_FILE  = BASE_DIR / "assets" / "Sudarshana_Lite_Logo.png"
-LOGO_ICO   = BASE_DIR / "assets" / "Sudarshana_Lite_Logo.ico"
+LOGO_FILE  = BASE_DIR / "assets" / "sudarshana_chakra_logo_core.png"
+LOGO_ICO   = BASE_DIR / "assets" / "app_icon_core.png"
+FAVICON_FILE = BASE_DIR / "assets" / "favicon.ico"
 BACKGROUND_IMAGE_FILE = BASE_DIR / "assets" / "background.png"
 MODEL_DOWNLOAD_URL = "https://storage.googleapis.com/mediapipe-assets/hand_landmarker.task"
 
@@ -1346,14 +1347,23 @@ def qcol(h: str, a: int = 255) -> QColor:
 
 
 def _logo_icon() -> QIcon:
-    return QIcon(str(LOGO_ICO if LOGO_ICO.exists() else LOGO_FILE))
+    try:
+        from core.brand_logo import get_app_icon
+        return get_app_icon()
+    except Exception:
+        return QIcon(str(LOGO_ICO if LOGO_ICO.exists() else LOGO_FILE))
 
 
 def _logo_pixmap(size: int) -> QPixmap:
-    pix = QPixmap(str(LOGO_FILE))
+    try:
+        from core.brand_logo import get_logo_pixmap, ensure_brand_assets
+        ensure_brand_assets()
+        pix = get_logo_pixmap(size, size)
+    except Exception:
+        pix = QPixmap(str(LOGO_FILE))
     if pix.isNull():
         return QPixmap(size, size)
-    return pix.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    return pix
 
 
 def _framed_logo(size: int, icon_size: int | None = None, *, bg: str = "rgba(18,18,18,240)",
@@ -13059,7 +13069,7 @@ class SystemConnectivityPage(QWidget):
             # Base variables
             base_dir = Path(os.path.abspath("."))
             script_path = base_dir / "main.py"
-            icon_path = base_dir / "assets" / "Sudarshana_Lite_Logo.ico"
+            icon_path = base_dir / "assets" / "favicon.ico"
             
             python_exe = sys.executable
             if not python_exe:

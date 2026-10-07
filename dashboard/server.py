@@ -613,6 +613,22 @@ class DashboardServer:
             from fastapi.responses import RedirectResponse
             return RedirectResponse(_CRYPTOJS_CDN)
 
+        _BRAND_ASSETS = {
+            "sudarshana_chakra_logo_core.png": "image/png",
+            "app_icon_core.png": "image/png",
+            "favicon.ico": "image/x-icon",
+        }
+
+        @app.get("/assets/{name}")
+        async def serve_brand_asset(name: str):
+            media = _BRAND_ASSETS.get(name)
+            if not media:
+                return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
+            path = BASE_DIR / "assets" / name
+            if not path.is_file():
+                return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
+            return FileResponse(str(path), media_type=media)
+
         @app.get("/login", response_class=HTMLResponse)
         async def login_page():
             return HTMLResponse(self._login_html)

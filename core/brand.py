@@ -51,6 +51,31 @@ _OVERRIDE_JSON_KEYS = (
     "product_name",
 )
 
+# The core brand logo is immutable too: any attempt to point the logo/icon at a
+# different file (via env or config) is a brand-integrity violation.
+_CANONICAL_LOGO_SUFFIX = "sudarshana_chakra_logo_core.png"
+_LOGO_OVERRIDE_ENV_KEYS = (
+    "SUDARSHANA_LOGO",
+    "SUDARSHANA_LOGO_PATH",
+    "APP_LOGO",
+    "APP_LOGO_PATH",
+    "BRAND_LOGO",
+    "BRAND_LOGO_PATH",
+)
+_LOGO_OVERRIDE_JSON_KEYS = (
+    "logo",
+    "logo_path",
+    "brand_logo",
+    "brand_logo_path",
+    "app_icon",
+    "app_icon_path",
+    "favicon",
+)
+
+
+def _is_canonical_logo(value: object) -> bool:
+    return _CANONICAL_LOGO_SUFFIX in str(value).replace("\\", "/")
+
 _CANONICAL = BRAND_NAME.casefold()
 
 
@@ -82,6 +107,13 @@ def find_brand_tampering() -> list[str]:
         if value is not None and _norm(value) != _CANONICAL:
             findings.append(f"environment variable {key}={value!r} conflicts with brand")
 
+    for key in _LOGO_OVERRIDE_ENV_KEYS:
+        value = os.environ.get(key)
+        if value and not _is_canonical_logo(value):
+            findings.append(
+                f"environment variable {key}={value!r} attempts to replace the locked brand logo"
+            )
+
     for path in _config_files():
         if not path.is_file():
             continue
@@ -94,6 +126,11 @@ def find_brand_tampering() -> list[str]:
         for key in _OVERRIDE_JSON_KEYS:
             if key in data and _norm(data[key]) not in ("", _CANONICAL):
                 findings.append(f"{path}: '{key}'={data[key]!r} masks brand")
+        for key in _LOGO_OVERRIDE_JSON_KEYS:
+            if data.get(key) and not _is_canonical_logo(data[key]):
+                findings.append(
+                    f"{path}: '{key}'={data[key]!r} attempts to replace the locked brand logo"
+                )
 
     return findings
 
