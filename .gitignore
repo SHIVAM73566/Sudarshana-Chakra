@@ -3,6 +3,7 @@
 venv/
 ENV/
 env/
+.env
 
 # Python cache
 __pycache__/
@@ -23,11 +24,11 @@ installer/dist/
 installer/build/
 
 # Android build outputs & IDE
-brahma-connect-android/.gradle/
-brahma-connect-android/**/build/
-brahma-connect-android/local.properties
-brahma-connect-android/.idea/
-brahma-connect-android/.cxx/
+sudarshana-connect-android/.gradle/
+sudarshana-connect-android/**/build/
+sudarshana-connect-android/local.properties
+sudarshana-connect-android/.idea/
+sudarshana-connect-android/.cxx/
 *.apk
 *.aab
 
@@ -55,8 +56,8 @@ config/device_location_cache.json
 config/learned_rules.json
 config/organizer_history.json
 config/patch_history.json
-config/brahma_connect.json
-config/brahma_connect/devices.json
+config/sudarshana_connect.json
+config/sudarshana_connect/devices.json
 memory/calendar_events.json
 memory/long_term.json
 memory/nutrition_log.json

@@ -34,12 +34,8 @@ def _call_gemini_json(prompt: str, system_instruction: str) -> Optional[dict]:
             client = genai.Client(api_key=gemini_key)
 
             models_to_try = [
-                "gemini-3.1-flash-lite",
-                "gemini-3.5-flash-lite",
-                "gemini-2.5-flash-lite",
+                "gemini-3.8-flash",
                 "gemini-flash-latest",
-                "gemini-2.5-flash",
-                "gemini-3.6-flash",
             ]
 
             def _query_model(m_name: str):
@@ -119,7 +115,7 @@ def generate_presentation_from_prompt(user_prompt: str, player=None, speak: Opti
         clean_title = clean_title.title() or "Presentation Overview"
         data = {
             "title": clean_title,
-            "subtitle": "Prepared by Brahma AI",
+            "subtitle": "Prepared by Sudarshana AI",
             "theme": "corporate",
             "slides": [
                 {
@@ -146,7 +142,7 @@ def generate_presentation_from_prompt(user_prompt: str, player=None, speak: Opti
             ]
         }
 
-    title = data.get("title") or "Brahma Presentation"
+    title = data.get("title") or "Sudarshana Presentation"
     subtitle = data.get("subtitle") or ""
     theme = data.get("theme") or "corporate"
     slides = data.get("slides") or []
@@ -210,7 +206,7 @@ def generate_spreadsheet_from_prompt(user_prompt: str, player=None, speak: Optio
             }]
         }
 
-    title = data.get("title") or "Brahma Workbook"
+    title = data.get("title") or "Sudarshana Workbook"
     worksheets = data.get("worksheets") or data.get("sheets") or []
 
     result = create_spreadsheet({

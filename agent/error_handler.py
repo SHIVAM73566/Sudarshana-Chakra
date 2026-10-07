@@ -2,8 +2,33 @@ from core.user_paths import get_user_data_dir
 import json
 import re
 import sys
+import threading
 from pathlib import Path
 from enum import Enum
+
+
+def _bounded_call(fn, timeout: float = 15.0):
+    """Run ``fn`` on a daemon thread; raise TimeoutError if it stalls.
+
+    Provider SDKs can retry indefinitely on invalid models/offline, which would
+    otherwise hang an entire agent task. Daemon thread => never blocks exit.
+    """
+    box: dict = {}
+
+    def _run():
+        try:
+            box["value"] = fn()
+        except BaseException as exc:  # noqa: BLE001
+            box["error"] = exc
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    t.join(timeout)
+    if "value" in box:
+        return box["value"]
+    if "error" in box:
+        raise box["error"]
+    raise TimeoutError(f"operation exceeded {timeout:.0f}s")
 
 
 def get_base_dir() -> Path:
@@ -23,7 +48,7 @@ class ErrorDecision(Enum):
     ABORT       = "abort"    
 
 
-ERROR_ANALYST_PROMPT = """You are the error recovery module of Brahma AI - Lite AI assistant.
+ERROR_ANALYST_PROMPT = """You are the error recovery module of Sudarshana AI - Lite AI assistant.
 
 A task step has failed. Analyze the error and decide what to do.
 
@@ -96,7 +121,7 @@ def analyze_error(
 
     genai.configure(api_key=_get_api_key())
     model = genai.GenerativeModel(
-        model_name="gemini-3.1-flash-lite",
+        model_name="gemini-3.8-flash",
         system_instruction=ERROR_ANALYST_PROMPT
     )
 
@@ -112,7 +137,7 @@ Error:
 Attempt number: {attempt}"""
 
     try:
-        response = model.generate_content(prompt)
+        response = _bounded_call(lambda: model.generate_content(prompt), timeout=15.0)
         text     = response.text.strip()
         text     = re.sub(r"```(?:json)?", "", text).strip().rstrip("`").strip()
 
@@ -158,7 +183,7 @@ def generate_fix(step: dict, error: str, fix_suggestion: str) -> dict:
         import google.generativeai as genai
 
     genai.configure(api_key=_get_api_key())
-    model = genai.GenerativeModel(model_name="gemini-2.5-flash")
+    model = genai.GenerativeModel(model_name="gemini-3.8-flash")
 
     prompt = f"""A task step failed. Generate a replacement step.
 
@@ -174,7 +199,7 @@ Write a Python script that accomplishes the same goal differently.
 Return ONLY the Python code, no explanation."""
 
     try:
-        response = model.generate_content(prompt)
+        response = _bounded_call(lambda: model.generate_content(prompt), timeout=15.0)
         code = response.text.strip()
         code = re.sub(r"```(?:python)?", "", code).strip().rstrip("`").strip()
 

@@ -5,6 +5,7 @@ import requests
 from pathlib import Path
 from typing import Optional
 from or_client import client as openrouter_client
+from nvidia_client import client as nvidia_client
 
 logger = logging.getLogger("llm_client")
 
@@ -33,6 +34,9 @@ class UnifiedAIClient:
             self._local_model = data.get("local_ai_model", "llama3.2")
         except Exception as e:
             logger.error(f"[LLM Client] Failed to load settings: {e}")
+
+    def _is_nvidia(self) -> bool:
+        return str(self._provider).lower() == "nvidia"
 
     def _local_chat_completion(self, messages: list[dict], temperature: float = 0.7, response_format: Optional[dict] = None) -> Optional[str]:
         payload = {
@@ -74,6 +78,8 @@ class UnifiedAIClient:
                 return result
             else:
                 raise RuntimeError("Local AI request failed. Please check if Ollama or LM Studio is running.")
+        elif self._is_nvidia():
+            return nvidia_client.chat(prompt, system, history, model, max_tokens, temperature)
         else:
             return openrouter_client.chat(prompt, system, history, model, max_tokens, temperature)
 
@@ -100,6 +106,8 @@ class UnifiedAIClient:
                 return json.loads(clean)
             except json.JSONDecodeError as e:
                 raise ValueError(f"Local model returned unparseable JSON: {e}\nRaw output: {raw[:200]}")
+        elif self._is_nvidia():
+            return nvidia_client.chat_json(prompt, system, model, max_tokens)
         else:
             return openrouter_client.chat_json(prompt, system, model, max_tokens)
 
@@ -120,6 +128,8 @@ class UnifiedAIClient:
             if result:
                 return result
             raise RuntimeError("Local AI vision request failed.")
+        elif self._is_nvidia():
+            return nvidia_client.vision(prompt, image_b64, mime, system, model, max_tokens)
         else:
             return openrouter_client.vision(prompt, image_b64, mime, system, model, max_tokens)
 
@@ -133,6 +143,8 @@ class UnifiedAIClient:
             with open(path, "rb") as f:
                 image_b64 = base64.b64encode(f.read()).decode("utf-8")
             return self.vision(prompt, image_b64, mime, system, model, max_tokens)
+        elif self._is_nvidia():
+            return nvidia_client.vision_from_file(prompt, image_path, system, model, max_tokens)
         else:
             return openrouter_client.vision_from_file(prompt, image_path, system, model, max_tokens)
 
@@ -143,6 +155,8 @@ class UnifiedAIClient:
             if result:
                 return result
             raise RuntimeError("Local AI request failed.")
+        elif self._is_nvidia():
+            return nvidia_client.multi_turn(messages, model, max_tokens, temperature)
         else:
             return openrouter_client.multi_turn(messages, model, max_tokens, temperature)
 

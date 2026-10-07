@@ -232,7 +232,7 @@ class MeetingAssistant:
             prompt,
         ]
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             contents=contents,
             config={"temperature": 0.0},
         )
@@ -359,7 +359,7 @@ class MeetingAssistant:
                 spoken = self._last_speech
 
                 prompt = f"""
-You are Brahma AI - Lite running in meeting mode on a Windows desktop.
+You are Sudarshana AI - Lite running in meeting mode on a Windows desktop.
 The screen belongs to a live Zoom, Microsoft Teams, WhatsApp call, or similar meeting.
 
 Tasks:
@@ -382,7 +382,7 @@ Answer: ...
                     prompt,
                 ]
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
                     contents=contents,
                     config={"temperature": 0.2},
                 )

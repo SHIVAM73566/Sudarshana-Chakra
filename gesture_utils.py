@@ -1,6 +1,6 @@
 # gesture_utils.py
 """
-Hand gesture recognition and classification utility for Brahma AI.
+Hand gesture recognition and classification utility for Sudarshana AI.
 
 Recognizes:
 - Open Palm (✋) -> Play / Pause

@@ -100,7 +100,7 @@ def execute(**kwargs):
 
     # --- Save the plot to a file ---
     # Create the deliverables directory if it doesn't exist
-    deliverables_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'BrahmaAI', 'deliverables')
+    deliverables_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'SudarshanaAI', 'deliverables')
     os.makedirs(deliverables_dir, exist_ok=True)
 
     image_path = os.path.join(deliverables_dir, f'{symbol}_price_trend_{interval}.png')

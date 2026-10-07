@@ -61,7 +61,7 @@
     let moonBokehMesh, spaceDustGroup;
     let glowSprite, spiralMat, outerLine;
 
-    // ——— REACTIVE BRAHMA EVO STATE CONTROLLER ———
+    // ——— REACTIVE SUDARSHANA EVO STATE CONTROLLER ———
     let currentState = "IDLE";
     const STATE_COLORS = {
       LISTENING:  { hot: 0x80ffff, mid: 0x00e5ff, dim: 0x0088aa }, // Luminous Cyan
@@ -71,8 +71,8 @@
       WORKING:    { hot: 0x00f0ff, mid: 0x0090ff, dim: 0x0040aa }, // Cyber Blue
       MUTED:      { hot: 0xff9999, mid: 0xff3b30, dim: 0x881111 }, // Crimson Red
       SCANNING:   { hot: 0xa0ffea, mid: 0x00f0ff, dim: 0x0088aa }, // Cyber Cyan Matrix
-      ONLINE:     { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Brahma Evo Quantum White & Cyber Cyan
-      IDLE:       { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Brahma Evo Quantum White & Cyber Cyan
+      ONLINE:     { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Sudarshana Evo Quantum White & Cyber Cyan
+      IDLE:       { hot: 0xffffff, mid: 0xebf5ff, dim: 0x00f0ff }, // Sudarshana Evo Quantum White & Cyber Cyan
     };
 
     let targetColorHot = new THREE.Color(0xffffff);
@@ -731,10 +731,10 @@
     }
 
     // Bridge hooks for Python QtWebEngine & Android WebView
-    window.setBrahmaState = function(state) {
+    window.setSudarshanaState = function(state) {
       if (!state) return;
       currentState = String(state).toUpperCase();
-      console.log("Brahma Evo State:", currentState);
+      console.log("Sudarshana Evo State:", currentState);
 
       const pal = STATE_COLORS[currentState] || STATE_COLORS.IDLE;
       targetColorHot.setHex(pal.hot);
@@ -852,49 +852,49 @@
           targetScale = 1.0;
           targetCameraZ = 46.0;
           targetPositionX = 0.0;
-          window.setBrahmaState("ONLINE");
+          window.setSudarshanaState("ONLINE");
           break;
         case 1: // Features / About
           targetScale = 1.12;
           targetCameraZ = 39.0;
           targetPositionX = 3.5;
-          window.setBrahmaState("SCANNING");
+          window.setSudarshanaState("SCANNING");
           break;
         case 2: // Sign In
           targetScale = 1.05;
           targetCameraZ = 41.0;
           targetPositionX = -3.2;
-          window.setBrahmaState("THINKING");
+          window.setSudarshanaState("THINKING");
           break;
         case 3: // Download
           targetScale = 1.2;
           targetCameraZ = 36.0;
           targetPositionX = 4.0;
-          window.setBrahmaState("EXECUTING");
+          window.setSudarshanaState("EXECUTING");
           break;
         case 4: // Mobile App
           targetScale = 1.08;
           targetCameraZ = 39.0;
           targetPositionX = -3.8;
-          window.setBrahmaState("LISTENING");
+          window.setSudarshanaState("LISTENING");
           break;
         case 5: // Setup Wizard
           targetScale = 1.04;
           targetCameraZ = 42.0;
           targetPositionX = 3.0;
-          window.setBrahmaState("WORKING");
+          window.setSudarshanaState("WORKING");
           break;
         case 6: // Thanks
           targetScale = 1.0;
           targetCameraZ = 47.0;
           targetPositionX = 0.0;
-          window.setBrahmaState("ONLINE");
+          window.setSudarshanaState("ONLINE");
           break;
         case 7: // Feedback
           targetScale = 0.95;
           targetCameraZ = 50.0;
           targetPositionX = 0.0;
-          window.setBrahmaState("IDLE");
+          window.setSudarshanaState("IDLE");
           break;
       }
     };
@@ -916,5 +916,6 @@
       window.addEventListener("load", boot);
     }
   </script>
+  <script src="avatar_portal.js"></script>
 </body>
 </html>

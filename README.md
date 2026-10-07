@@ -1,8 +1,8 @@
-# ⚡ Brahma AI Evo — Autonomous Desktop Operating Intelligence
+# ⚡ Sudarshana Chakra — Autonomous Desktop Operating Intelligence
 
 <div align="center">
 
-<img src="assets/brahma_evo_logo.png" alt="Brahma AI Evo Logo" width="220" />
+<img src="assets/sudarshana_evo_logo.png" alt="Sudarshana Chakra Logo" width="220" />
 
 ### *The Self-Evolving, Multimodal Personal AI Desktop Environment*
 
@@ -18,22 +18,22 @@
 
 ## 🌌 Overview
 
-**Brahma AI Evo** is a next-generation desktop intelligence built to function like an authentic JARVIS workstation. Combining real-time bi-directional native voice audio, multimodal computer vision, autonomous code self-evolution, and local system orchestrations, Brahma Evo transforms your Windows PC into a self-evolving command center.
+**Sudarshana Chakra** is a next-generation desktop intelligence built to function like an authentic JARVIS workstation. Combining real-time bi-directional native voice audio, multimodal computer vision, autonomous code self-evolution, and local system orchestrations, Sudarshana Chakra transforms your Windows PC into a self-evolving command center.
 
 ---
 
-## ⚡ What's New in Brahma AI Evo
+## ⚡ What's New in Sudarshana Chakra
 
 ### 1. 🔌 Holographic Hardware Assembler & Circuit HUD
-- **Screen & Voice Part Recognition**: Brahma scans your screen via computer vision or parses voice commands (`"Brahma, how to connect DHT11 to Arduino Pro Mini"`) to recognize microcontrollers (Arduino Uno, Pro Mini, ESP32), sensors (DHT11, HC-SR04 ultrasonic, servos), and passive components.
-- **In-App Interactive Pop-up**: Opens a compact, dark glassmorphic popup overlay directly inside Brahma showing:
+- **Screen & Voice Part Recognition**: Sudarshana scans your screen via computer vision or parses voice commands (`"Sudarshana, how to connect DHT11 to Arduino Pro Mini"`) to recognize microcontrollers (Arduino Uno, Pro Mini, ESP32), sensors (DHT11, HC-SR04 ultrasonic, servos), and passive components.
+- **In-App Interactive Pop-up**: Opens a compact, dark glassmorphic popup overlay directly inside Sudarshana showing:
   - Component cards with pinout labels (`VCC`, `DATA`, `GND`, `2`, `p8`, `p9`).
   - **Animated glowing neon SVG wires** with real-time flowing white electron pulse dots.
   - Numbered pin bubbles (`①`, `②`, `③`, `④`, `⑤`).
   - Operating voltage safety callouts and ready-to-flash Arduino C++ firmware.
 
 ### 2. 🧬 Project Ultron — Self-Evolving Autonomous Skill Crucible
-- **On-the-Fly Code Synthesis**: When asked to execute a task outside its built-in toolkit, Brahma identifies the capability gap, writes a brand-new Python tool directly into `features/`, tests it inside an isolated sandbox ("The Crucible"), and auto-registers it dynamically without restarting the application.
+- **On-the-Fly Code Synthesis**: When asked to execute a task outside its built-in toolkit, Sudarshana identifies the capability gap, writes a brand-new Python tool directly into `features/`, tests it inside an isolated sandbox ("The Crucible"), and auto-registers it dynamically without restarting the application.
 - **Persistent Vault**: All forged skills are saved in your `features/` directory and hot-reloaded automatically.
 
 ### 3. 🛡️ Proactive Auto-Heal Engine
@@ -44,7 +44,7 @@
 - **Dynamic State Glow States**:
   - 🟡 **Gold**: Standby / Listening
   - 🔵 **Cyan / Blue**: Capturing Voice (Live Energy Wave)
-  - 🟣 **Purple**: Brahma Reasoning / Thinking
+  - 🟣 **Purple**: Sudarshana Reasoning / Thinking
   - 🟢 **Green**: Executing Tool / System Action
   - 🔴 **Red**: Muted
 
@@ -67,6 +67,19 @@
   - Instagram & Smart Home
   - Instant live test-connection buttons.
 
+### 9. 🔐 Voice Biometric Authorization Gate
+- **Enrol once, lock your voice:** register a spoken pass-phrase (`"register voice password <phrase>"`). When the lock is engaged, only utterances carrying the voice password are accepted.
+- **Unrecognised voice is refused:** unauthorised voice input is answered with *"Voice authorization is enabled. Please provide the voice password."*
+- **Text master-password fallback:** set a secondary *text* password (`"set master password <password>"`) so you can unlock with the keyboard when no microphone is available. It unlocks the same session and never creates a bypass.
+- **Dashboard toggle:** the web dashboard shows a `LOCK STATE` control (top bar) and the companion HUD displays a live `LOCK STATE: SECURE 🔒` badge; toggling either engages/disengages the same system-wide lock.
+- **Safe fallback:** typed text input always remains available, so you are never locked out.
+- Commands: `register voice password …`, `lock voice for security reasons`, `voice password is …`, `set master password …`, `master password is …`, `disable voice security`, `voice security status`, `forget voice password`.
+- State is stored locally at `%LOCALAPPDATA%\SudarshanaAI\config\voice_security.json` (never bundled in releases).
+
+### 10. 🪪 Immutable Brand, Avatar & Companion HUD
+- **Tamper-proof identity:** the application name `Sudarshana Chakra` and codename `SudarshanaChakra` are frozen at boot (`core/brand.py`); any attempt to alter them aborts startup.
+- **Permanent guardian avatar:** the companion portrait `assets/sudarshana_avatar_core.png` is embedded as a Base64 constant, self-heals if deleted or modified, and is re-verified against its SHA-256 fingerprint (`core/avatar.py`). It is rendered inside a glowing, non-removable circular HUD (rotating telemetry rings, scanlines, live gauges) in the centre-left of the dashboard, carrying the badges **SUDARSHANA COMPANION — ACTIVE**, **BIOMETRIC SYNC** and **LOCK STATE: SECURE 🔒**. The image cannot be swapped, overlaid or deleted; only the textual display name is user-changeable.
+
 ---
 
 ## 🛠️ Core Capabilities
@@ -87,8 +100,8 @@
 - **PowerPoint (`.pptx`)**: Build branded presentations with slide layouts, typography, and speaker notes.
 - **PDF Suite**: Convert, merge, extract, and assemble PDF deliverables.
 
-### 📱 Brahma Connect (Android Companion)
-- **AI Phone Call Proxy**: Brahma screens incoming phone calls, talks to the caller, takes meeting notes, and delivers immediate desktop transcripts and summaries.
+### 📱 Sudarshana Connect (Android Companion)
+- **AI Phone Call Proxy**: Sudarshana screens incoming phone calls, talks to the caller, takes meeting notes, and delivers immediate desktop transcripts and summaries.
 - **Ecosystem Sync**: Device geolocation, SMS notifications, and battery status.
 
 ### 🏡 Smart Home Hub
@@ -122,14 +135,37 @@
    ```
    *Or launch using the included batch file:*
    ```cmd
-   start_brahma.bat
+   start_sudarshana.bat
    ```
 
 3. **Configure API Keys:**
-   - Launch Brahma AI Evo.
-   - Click the **Settings** icon on the top navigation bar.
-   - Enter your **Gemini API Key** and any optional credentials (Spotify MCP, Weather, etc.) into the respective cards.
-   - Click **Save & Connect**.
+   - **Option A — `.env` file (recommended for first install):** copy `.env.example` to `.env` and fill in your keys:
+     ```ini
+     GEMINI_API_KEY=your_gemini_api_key
+     NVIDIA_API_KEY=nvapi-your_nvidia_api_key
+     OPENROUTER_API_KEY=            # optional
+     ```
+     Sudarshana loads `.env` at boot and **degrades gracefully**: if a key is missing it falls back to the next configured provider, and local/text features keep working without any key.
+   - **Option B — in-app Settings:** launch Sudarshana Chakra, open the **Settings** panel, and enter keys per provider (Google Gemini, NVIDIA, OpenRouter). Provider values are stored locally in `%LOCALAPPDATA%\SudarshanaAI\config\api_keys.json`.
+   - Choosing the active provider: set **Default AI Provider** to `Google Gemini` or `NVIDIA` (NVIDIA NIM is a drop-in text backend). Gemini is used for Live voice/vision.
+
+### 🔑 API Keys (NVIDIA / Gemini)
+
+| Provider | Where to get a key | Used for | Required? |
+| :--- | :--- | :--- | :--- |
+| **Google Gemini** | [Google AI Studio](https://aistudio.google.com/app/apikey) | Live voice, vision, text fallback, summarisation | Yes for voice |
+| **NVIDIA NIM** (`nvapi-…`) | [build.nvidia.com](https://build.nvidia.com) | Text planning/execution when set as default provider | Optional |
+| **OpenRouter** | [openrouter.ai/keys](https://openrouter.ai/keys) | Legacy/fallback text provider | Optional |
+
+---
+
+## 🔐 Enabling the Voice Biometric Lock
+
+1. Say or type: **`register voice password <your secret phrase>`** — this enrols the pass-phrase and enables the lock.
+2. Lock at any time with **`lock voice for security reasons`** (or click the **BIOMETRIC** toggle on the mobile Dashboard).
+3. Any voice command that does not carry the pass-phrase is refused with *"Voice authorization is enabled. Please provide the voice password."*
+4. If no microphone is available, **type a secondary master password** (set once with `set master password <secret>`) using `master password is <secret>`.
+5. Release with **`disable voice security`**, or wipe with **`forget voice password`**.
 
 ---
 
@@ -137,9 +173,9 @@
 
 | Intent | Sample Voice / Text Command |
 | :--- | :--- |
-| **Hardware Circuit** | *"Brahma, how to connect DHT11 to Arduino Pro Mini"* |
+| **Hardware Circuit** | *"Sudarshana, how to connect DHT11 to Arduino Pro Mini"* |
 | **Circuit Vision** | *"See the Arduino parts on my screen and tell me how to assemble them"* |
-| **Self-Evolution** | *"Brahma, learn a new skill to track International Space Station coordinates"* |
+| **Self-Evolution** | *"Sudarshana, learn a new skill to track International Space Station coordinates"* |
 | **Flight Radar** | *"Show flight route from Mumbai to London"* |
 | **Nearby Amenities** | *"Find nearby hospitals on the map"* |
 | **Music Playback** | *"Play Starboy on Spotify"* |
@@ -152,7 +188,7 @@
 ## 🏗️ Architecture
 
 ```
-Brahma AI Evo/
+Sudarshana Chakra/
 ├── main.py                     # Main application entry point & live event loop
 ├── ui.py                       # PyQt6 GUI: Command Bar, Waveform FFT, HUD Wings, Chat
 ├── actions/                    # Built-in action tools & executors
@@ -173,16 +209,28 @@ Brahma AI Evo/
 │   ├── circuit_schematic.py    # Modular circuit schematic feature
 │   └── spotify_mcp.py          # Modular Spotify feature
 ├── smart_home/                 # Smart device provider & discovery services
-└── brahma-connect-android/     # Companion Android mobile application
+└── sudarshana-connect-android/     # Companion Android mobile application
 ```
 
 ---
 
 ## 🔒 Security & Privacy
 
-- All long-term memories, credentials, and configuration files are stored locally in `%LOCALAPPDATA%\BrahmaAI\`.
+- All long-term memories, credentials, and configuration files are stored locally in `%LOCALAPPDATA%\SudarshanaAI\`.
 - External tools run through permission sentries and the isolated Crucible sandbox.
 - Audio and video frames are only streamed during active conversation sessions.
+
+---
+
+## 📦 Building a Release Package
+
+Create a clean, distributable ZIP (source, assets, launchers and installer specs — no virtual environment, git metadata, caches, secrets, or personal runtime config):
+
+```powershell
+python package_release.py
+```
+
+The archive is written to `dist/Sudarshana_Chakra_AI_v<version>.zip`.
 
 ---
 
@@ -190,7 +238,7 @@ Brahma AI Evo/
 
 **Personal & Private Local Use Only — No Distribution.**
 
-This project is licensed under the **Brahma AI Evo Source-Available Personal Use License**.
+This project is licensed under the **Sudarshana Chakra Source-Available Personal Use License**.
 
 - ✅ **Allowed:** You may download, clone, inspect, build, and run the software locally strictly on your own personal device for private, personal, educational, and research use.
 - 🚫 **Strictly Prohibited (No Distribution):** You may **NOT** distribute, redistribute, re-upload, mirror, share, transmit, sublicense, or publish this software, repository, binaries, or derivative works anywhere (including other Git hosts, public repositories, or cloud platforms). The only official distribution source is this repository.
@@ -199,5 +247,5 @@ This project is licensed under the **Brahma AI Evo Source-Available Personal Use
 For full terms and legal conditions, see the [LICENSE](LICENSE) file. For commercial licensing inquiries, reach out via [Discord](https://discord.gg/gEYmJKKtq3).
 
 <div align="center">
-<b>Brahma AI Evo</b> • Built with intelligence, precision, and autonomy.
+<b>Sudarshana Chakra</b> • Built with intelligence, precision, and autonomy.
 </div>

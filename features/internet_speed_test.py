@@ -73,7 +73,7 @@ def execute(**kwargs) -> Dict[str, Any]:
     colors = ["#00F0FF", "#10B981", "#F59E0B"]
 
     bars = ax.bar(labels, values, color=colors, width=0.45, edgecolor="#1E293B", linewidth=1.5)
-    ax.set_title("BRAHMA NETWORK TELEMETRY — INTERNET SPEED", color="#FFFFFF", fontsize=13, fontweight="bold", pad=15)
+    ax.set_title("SUDARSHANA NETWORK TELEMETRY — INTERNET SPEED", color="#FFFFFF", fontsize=13, fontweight="bold", pad=15)
     ax.tick_params(axis="y", colors="#94A3B8")
     ax.tick_params(axis="x", colors="#FFFFFF", labelsize=10)
     ax.spines["top"].set_visible(False)
@@ -98,7 +98,7 @@ def execute(**kwargs) -> Dict[str, Any]:
     ax.set_axisbelow(True)
 
     # Output directory
-    output_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "BrahmaAI", "deliverables")
+    output_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "SudarshanaAI", "deliverables")
     os.makedirs(output_dir, exist_ok=True)
     image_path = os.path.join(output_dir, "internet_speed_test.png")
     fig.tight_layout()

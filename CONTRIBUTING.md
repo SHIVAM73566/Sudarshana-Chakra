@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve Brahma AI - Lite.
+Thank you for helping improve Sudarshana AI - Lite.
 
 ## Before You Start
 

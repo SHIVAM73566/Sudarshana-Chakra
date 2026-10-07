@@ -638,7 +638,7 @@ def browser_control(
             result = mcp.run_code_unsafe(code)
 
         elif action in {"screenshot", "take_screenshot"}:
-            out_dir = Path.home() / "Desktop" / "BrahmaAI"
+            out_dir = Path.home() / "Desktop" / "SudarshanaAI"
             out_dir.mkdir(parents=True, exist_ok=True)
             custom_path = parameters.get("path")
             if not custom_path:

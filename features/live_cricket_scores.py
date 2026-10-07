@@ -89,7 +89,7 @@ def execute(**kwargs):
             spine.set_color('#1E293B')
 
         local_app_data = os.environ.get('LOCALAPPDATA', os.path.expanduser('~'))
-        output_dir = os.path.join(local_app_data, 'BrahmaAI', 'deliverables')
+        output_dir = os.path.join(local_app_data, 'SudarshanaAI', 'deliverables')
         os.makedirs(output_dir, exist_ok=True)
         image_path = os.path.join(output_dir, 'cricket_scores_output.png')
         plt.savefig(image_path, bbox_inches='tight', dpi=140)

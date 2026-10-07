@@ -1,6 +1,6 @@
 from core.user_paths import get_user_data_dir
 """
-Brahma Evo - Cinematic Holographic Sound Effects Subsystem
+Sudarshana Chakra - Cinematic Holographic Sound Effects Subsystem
 Provides low-latency, non-blocking sci-fi acoustics for holographic UI interactions:
 - Holographic wing deploy / aperture whoosh
 - High-tech telemetry chirp
@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import QObject, QUrl
+from PyQt6.QtCore import QObject, QUrl, QCoreApplication
 from PyQt6.QtMultimedia import QSoundEffect
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -160,6 +160,7 @@ class SoundManager(QObject):
         self._last_telemetry_time = 0.0
         self._telemetry_cooldown = 0.22  # Minimum 220ms between telemetry chirps
         self._effects: dict[str, QSoundEffect] = {}
+        self._audio_ready = False
 
         self._load_settings()
         self._init_audio()
@@ -190,6 +191,13 @@ class SoundManager(QObject):
             pass
 
     def _init_audio(self):
+        # QSoundEffect requires a live QCoreApplication/QApplication instance.
+        # The singleton is created at import time, before the app exists, so
+        # defer real initialization until the application is running.
+        if self._audio_ready:
+            return
+        if QCoreApplication.instance() is None:
+            return
         try:
             _generate_default_sounds(SOUNDS_DIR)
 
@@ -207,8 +215,14 @@ class SoundManager(QObject):
                     eff.setSource(QUrl.fromLocalFile(str(path.resolve())))
                     eff.setVolume(self._volume)
                     self._effects[name] = eff
+            self._audio_ready = True
         except Exception as e:
             print(f"[SoundManager] Initialization notice: {e}")
+
+    def ensure_ready(self):
+        """Initialize audio once a QApplication exists (safe to call repeatedly)."""
+        if not self._audio_ready:
+            self._init_audio()
 
     # --- Property Accessors ---
 
@@ -228,6 +242,7 @@ class SoundManager(QObject):
     @volume.setter
     def volume(self, val: float):
         self._volume = max(0.0, min(1.0, float(val)))
+        self.ensure_ready()
         for eff in self._effects.values():
             try:
                 eff.setVolume(self._volume)
@@ -246,6 +261,7 @@ class SoundManager(QObject):
     def _play(self, name: str):
         if not self._enabled:
             return
+        self.ensure_ready()
         eff = self._effects.get(name)
         if eff:
             try:

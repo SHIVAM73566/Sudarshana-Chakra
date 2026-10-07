@@ -21,13 +21,13 @@ BASE_DIR        = get_base_dir()
 API_CONFIG_PATH = get_user_data_dir() / "config" / "api_keys.json"
 
 
-PLANNER_PROMPT = """You are the planning module of Brahma Evo, an autonomous, self-evolving AI assistant.
+PLANNER_PROMPT = """You are the planning module of Sudarshana Chakra, an autonomous, self-evolving AI assistant.
 Your job: break any user goal into a sequence of steps using ONLY the tools listed below.
 
 ABSOLUTE RULES:
 - NEVER use generated_code or write Python scripts directly.
 - NEVER reference previous step results in parameters. Every step is independent.
-- AUTONOMOUS SELF-EVOLUTION: When the user asks to create, build, or add a skill/feature, OR when the user asks for a capability, specialized query, calculation, or automation not covered by any available tool, use skill_forge with action="forge", goal="<the required capability>", and skill_name="<descriptive_name>". Brahma Evo will autonomously synthesize, sandbox-test in Crucible, and hot-load the new capability on the fly.
+- AUTONOMOUS SELF-EVOLUTION: When the user asks to create, build, or add a skill/feature, OR when the user asks for a capability, specialized query, calculation, or automation not covered by any available tool, use skill_forge with action="forge", goal="<the required capability>", and skill_name="<descriptive_name>". Sudarshana Chakra will autonomously synthesize, sandbox-test in Crucible, and hot-load the new capability on the fly.
 - Use web_search for ANY information retrieval, research, or current data.
 - Use pdf_document to create, compile, or generate PDF files (NEVER use file_controller for .pdf files).
 - Use word_document to create or generate Word (.docx) documents.
@@ -206,7 +206,7 @@ auto_heal
   rule_text: string (optional, for learn_rule)
   category: string (optional, for learn_rule: general, formatting, workflow, habit)
   patch_id: string (optional, for rollback)
-  Use whenever user asks to fix an error/bug, heal/patch Brahma, undo/rollback a patch, view patch history, or remember a permanent rule/behavioral preference.
+  Use whenever user asks to fix an error/bug, heal/patch Sudarshana, undo/rollback a patch, view patch history, or remember a permanent rule/behavioral preference.
 
 circuit_assembler
   action: "assemble_components" | "analyze_screen" | "show_schematic" (required)
@@ -225,13 +225,13 @@ call_screening
   action: "start" | "take_over" | "hang_up" (required)
   caller: string (optional)
   app: string (optional)
-  Answering a call always requires the user to confirm on the Brahma Evo HUD.
+  Answering a call always requires the user to confirm on the Sudarshana Chakra HUD.
 
 skill_forge
   action: "forge" | "list" (required)
   goal: string (for forge)
   skill_name: string (optional)
-  Use whenever user asks to create a new skill or feature, OR whenever a task cannot be solved by any existing tool. Brahma Evo will autonomously synthesize, sandbox-verify in Crucible, and hot-load the feature.
+  Use whenever user asks to create a new skill or feature, OR whenever a task cannot be solved by any existing tool. Sudarshana Chakra will autonomously synthesize, sandbox-verify in Crucible, and hot-load the feature.
 
 dynamic_skill
   action: "list" | "run" (required)
@@ -408,7 +408,7 @@ def create_plan(goal: str, context: str = "") -> dict:
 
     genai.configure(api_key=_get_api_key())
     system_prompt = _planner_system_prompt()
-    candidates = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest"]
+    candidates = ["gemini-3.8-flash", "gemini-flash-latest"]
     
     user_input = f"Goal: {goal}"
     if context:
@@ -490,7 +490,7 @@ def replan(goal: str, completed_steps: list, failed_step: dict, error: str) -> d
 
     genai.configure(api_key=_get_api_key())
     system_prompt = _planner_system_prompt()
-    candidates = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest"]
+    candidates = ["gemini-3.8-flash", "gemini-flash-latest"]
 
     completed_summary = "\n".join(
         f"  - Step {s['step']} ({s['tool']}): DONE" for s in completed_steps

@@ -1,5 +1,5 @@
 """
-file_processor.py — Brahma AI Universal File Processor
+file_processor.py — Sudarshana AI Universal File Processor
 
 Supported types:
   image   → describe, ocr, resize, convert, compress, crop
@@ -36,7 +36,7 @@ def _get_api_key() -> str:
 
 def _gemini_client():
     genai.configure(api_key=_get_api_key())
-    return genai.GenerativeModel("gemini-2.5-flash")
+    return genai.GenerativeModel("gemini-3.8-flash")
 
 
 def _detect_type(path: Path) -> str:

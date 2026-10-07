@@ -56,7 +56,7 @@ def _resolve_save_path(output_path: str, language: str) -> Path:
         p = Path(output_path)
         return p if p.is_absolute() else DESKTOP / p
     ext = ext_map.get((language or "python").lower(), ".py")
-    return DESKTOP / f"brahma_code{ext}"
+    return DESKTOP / f"sudarshana_code{ext}"
 
 
 def _read_file(file_path: str) -> tuple[str, str]:
@@ -96,7 +96,7 @@ def _has_error(output: str) -> bool:
 def _take_screenshot() -> Path | None:
     try:
         import pyautogui
-        screenshot_path = Path.home() / "Desktop" / f"brahma_debug_{int(time.time())}.png"
+        screenshot_path = Path.home() / "Desktop" / f"sudarshana_debug_{int(time.time())}.png"
         screenshot = pyautogui.screenshot()
         screenshot.save(str(screenshot_path))
         print(f"[Code] 📸 Screenshot: {screenshot_path}")

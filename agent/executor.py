@@ -25,6 +25,31 @@ def get_base_dir() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def _bounded_call(fn: Callable, timeout: float = 15.0):
+    """Run ``fn`` on a daemon thread and return its result, or raise TimeoutError.
+
+    Guards against provider SDKs that hang indefinitely when offline or when
+    handed an invalid model name (they retry with long backoff). A daemon
+    thread is used so a stuck call can never block process exit.
+    """
+    box: dict = {}
+
+    def _run():
+        try:
+            box["value"] = fn()
+        except BaseException as exc:  # noqa: BLE001 - propagate to caller
+            box["error"] = exc
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    t.join(timeout)
+    if "value" in box:
+        return box["value"]
+    if "error" in box:
+        raise box["error"]
+    raise TimeoutError(f"operation exceeded {timeout:.0f}s")
+
+
 BASE_DIR        = get_base_dir()
 API_CONFIG_PATH = get_user_data_dir() / "config" / "api_keys.json"
 
@@ -60,10 +85,10 @@ def _run_skill_forge(
 
     name = str(result.get("name") or skill_name or "new_feature")
     description = str(result.get("description") or "")
-    announcement = f"⚡ [Brahma Evo] Synthesized and activated feature '{name}'. {description}".strip()
+    announcement = f"⚡ [Sudarshana Chakra] Synthesized and activated feature '{name}'. {description}".strip()
 
     if player and hasattr(player, "write_log"):
-        player.write_log(f"Brahma Evo: {announcement}")
+        player.write_log(f"Sudarshana Chakra: {announcement}")
 
     # Immediately execute the newly forged skill to satisfy the user's initial goal
     execution_output = ""
@@ -132,16 +157,18 @@ def _inject_context(params: dict, tool: str, step_results: dict, goal: str = "")
 
 
 def _detect_language(text: str) -> str:
-    import google.generativeai as genai
-    genai.configure(api_key=_get_api_key())
-    model = genai.GenerativeModel("gemini-3.1-flash-lite")
     try:
-        response = model.generate_content(
-            f"What language is this text written in? "
-            f"Reply with ONLY the language name in English (e.g. Turkish, English, French).\n\n"
-            f"Text: {text[:200]}"
-        )
-        return response.text.strip()
+        def _work():
+            import google.generativeai as genai
+            genai.configure(api_key=_get_api_key())
+            model = genai.GenerativeModel("gemini-3.8-flash")
+            response = model.generate_content(
+                f"What language is this text written in? "
+                f"Reply with ONLY the language name in English (e.g. Turkish, English, French).\n\n"
+                f"Text: {text[:200]}"
+            )
+            return response.text.strip()
+        return _bounded_call(_work, timeout=12.0)
     except Exception:
         return "English"
 
@@ -150,26 +177,29 @@ def _translate_to_goal_language(content: str, goal: str) -> str:
     if not goal:
         return content
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=_get_api_key())
-        model = genai.GenerativeModel("gemini-3.1-flash-lite")
+        def _work():
+            import google.generativeai as genai
+            genai.configure(api_key=_get_api_key())
+            model = genai.GenerativeModel("gemini-3.8-flash")
 
-        target_lang = _detect_language(goal)
-        print(f"[Executor] 🌐 Translating to: {target_lang}")
+            target_lang = _detect_language(goal)
+            print(f"[Executor] 🌐 Translating to: {target_lang}")
 
-        prompt = (
-            f"You are a professional translator. "
-            f"Translate the following text into {target_lang}.\n"
-            f"IMPORTANT:\n"
-            f"- Translate EVERYTHING, leave nothing in English\n"
-            f"- Keep all facts, numbers, and data intact\n"
-            f"- Keep the structure and formatting\n"
-            f"- Output ONLY the translated text, nothing else\n\n"
-            f"Text to translate:\n{content[:4000]}"
-        )
-        response = model.generate_content(prompt)
-        translated = response.text.strip()
-        print(f"[Executor] ✅ Translation done ({target_lang})")
+            prompt = (
+                f"You are a professional translator. "
+                f"Translate the following text into {target_lang}.\n"
+                f"IMPORTANT:\n"
+                f"- Translate EVERYTHING, leave nothing in English\n"
+                f"- Keep all facts, numbers, and data intact\n"
+                f"- Keep the structure and formatting\n"
+                f"- Output ONLY the translated text, nothing else\n\n"
+                f"Text to translate:\n{content[:4000]}"
+            )
+            response = model.generate_content(prompt)
+            return response.text.strip()
+
+        translated = _bounded_call(_work, timeout=20.0)
+        print(f"[Executor] ✅ Translation done")
         return translated
     except Exception as e:
         print(f"[Executor] ⚠️ Translation failed: {e}")
@@ -416,8 +446,8 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
         event = {"title": p.get("caller") or "Incoming call", "app": p.get("app") or "Phone / Call"}
         return request(
             "start-call-screening",
-            "Answer this call as Brahma Evo",
-            f"Brahma will answer {event['title']} in {event['app']} and prepare a transcript and summary.",
+            "Answer this call as Sudarshana Chakra",
+            f"Sudarshana will answer {event['title']} in {event['app']} and prepare a transcript and summary.",
             lambda: (start_call_proxy(event, ui=player, speak_fn=speak) and "Call screening started."),
         )
 
@@ -428,7 +458,7 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
             return "Installed skills: " + ", ".join(item["name"] for item in DynamicToolRegistry.list_skills())
         goal = str(p.get("goal", "")).strip()
         if not goal:
-            return "Describe the capability you want Brahma to learn."
+            return "Describe the capability you want Sudarshana to learn."
         return _run_skill_forge(
             goal=goal,
             skill_name=p.get("skill_name"),
@@ -451,7 +481,7 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
         else:
             out_str = str(run_res).strip()
         if player and hasattr(player, "write_log"):
-            player.write_log(f"Brahma Evo [{name}]:\n{out_str}")
+            player.write_log(f"Sudarshana Chakra [{name}]:\n{out_str}")
         return out_str
 
     else:
@@ -464,7 +494,7 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
                 else:
                     out_str = str(run_res).strip()
                 if player and hasattr(player, "write_log"):
-                    player.write_log(f"Brahma Evo [{tool}]:\n{out_str}")
+                    player.write_log(f"Sudarshana Chakra [{tool}]:\n{out_str}")
                 return out_str
         except Exception as exc:
             return f"Feature '{tool}' failed: {exc}"
@@ -662,21 +692,26 @@ class AgentExecutor:
 
     def _summarize(self, goal: str, completed_steps: list, speak: Callable | None) -> str:
         fallback = f"All done, sir. Completed {len(completed_steps)} steps for: {goal[:60]}."
-        try:
+        steps_str = "\n".join(f"- {s.get('description', '')}" for s in completed_steps)
+        prompt    = (
+            f'User goal: "{goal}"\n'
+            f"Completed steps:\n{steps_str}\n\n"
+            "Write a single natural sentence summarizing what was accomplished. "
+            "Address the user as 'sir'. Be direct and positive."
+        )
+
+        def _work():
             import google.generativeai as genai
             genai.configure(api_key=_get_api_key())
-            model = genai.GenerativeModel(model_name="gemini-2.5-flash")
-            steps_str = "\n".join(f"- {s.get('description', '')}" for s in completed_steps)
-            prompt    = (
-                f'User goal: "{goal}"\n'
-                f"Completed steps:\n{steps_str}\n\n"
-                "Write a single natural sentence summarizing what was accomplished. "
-                "Address the user as 'sir'. Be direct and positive."
-            )
-            response = model.generate_content(prompt)
-            summary  = response.text.strip()
-            if speak: speak(summary)
-            return summary
+            model = genai.GenerativeModel(model_name="gemini-3.8-flash")
+            return model.generate_content(prompt).text.strip()
+
+        try:
+            summary = _bounded_call(_work, timeout=15.0)
+            if summary:
+                if speak: speak(summary)
+                return summary
         except Exception:
-            if speak: speak(fallback)
-            return fallback
+            pass
+        if speak: speak(fallback)
+        return fallback

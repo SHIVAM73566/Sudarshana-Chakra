@@ -36,7 +36,7 @@ from google import genai
 from llm_client import client as openrouter_client
 
 
-logger = logging.getLogger("brahma_evo.discord")
+logger = logging.getLogger("sudarshana_evo.discord")
 
 
 def _base_dir() -> Path:
@@ -181,7 +181,7 @@ class DiscordBotService:
             except Exception as exc:
                 logger.warning("Discord channel resolve failed: %s", exc)
                 return
-        prefix = "Brahma Evo" if role == "assistant" else "You" if role == "user" else "System"
+        prefix = "Sudarshana Chakra" if role == "assistant" else "You" if role == "user" else "System"
         payload = f"**{prefix}**: {text}"
         try:
             if len(payload) <= 1900:
@@ -264,7 +264,7 @@ class DiscordBotService:
                             status=discord.Status.online,
                             activity=discord.Activity(
                                 type=discord.ActivityType.listening,
-                                name="Brahma Evo commands",
+                                name="Sudarshana Chakra commands",
                             ),
                         )
                     except Exception:
@@ -304,7 +304,7 @@ class DiscordBotService:
                         if self._pending_channels:
                             self._pending_channels.pop()
                         await message.reply(
-                            "I couldn’t hand that command to Brahma Evo.",
+                            "I couldn’t hand that command to Sudarshana Chakra.",
                             mention_author=False,
                             allowed_mentions=discord.AllowedMentions.none(),
                         )
@@ -401,7 +401,7 @@ class DiscordBotService:
         gemini_key = (keys.get("gemini_api_key") or "").strip()
         openrouter_key = (keys.get("openrouter_api_key") or "").strip()
         system_prompt = (
-            "You are Brahma Evo inside Discord. You are a self-evolving AI assistant. "
+            "You are Sudarshana Chakra inside Discord. You are a self-evolving AI assistant. "
             "Be concise, accurate, and helpful. "
             "Keep replies friendly and under 250 words unless the user asks for detail."
         )
@@ -413,7 +413,7 @@ class DiscordBotService:
                     http_options={"api_version": "v1beta"},
                 )
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
                     contents=f"{system_prompt}\n\nUser: {prompt}",
                     config={"temperature": 0.5},
                 )

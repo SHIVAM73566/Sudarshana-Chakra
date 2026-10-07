@@ -15,12 +15,7 @@ $WorkingDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Set-Location -Path $WorkingDir
 
 Write-Host "==========================================================================" -ForegroundColor Yellow
-Write-Host "  ____  ____      _    _   _ __  __    _      _    ___ " -ForegroundColor Yellow
-Write-Host " | __ )|  _ \    / \  | | | |  \/  |  / \    / \  |_ _|" -ForegroundColor Yellow
-Write-Host " |  _ \| |_) |  / _ \ | |_| | |\/| | / _ \  / _ \  | | " -ForegroundColor Yellow
-Write-Host " | |_) |  _ <  / ___ \|  _  | |  | |/ ___ \/ ___ \ | | " -ForegroundColor Yellow
-Write-Host " |____/|_| \_\/_/   \_\_| |_|_|  |_/_/   \_\_/   \_\___|" -ForegroundColor Yellow
-Write-Host "                      BRAHMA EVO" -ForegroundColor Cyan
+Write-Host "        S U D A R S H A N A   C H A K R A" -ForegroundColor Cyan
 Write-Host "         AUTONOMOUS SELF-EVOLUTION COGNITIVE ENGINE" -ForegroundColor Green
 Write-Host "   [Skill Forge // Crucible Sandbox // 180 FPS HoloCore]" -ForegroundColor Cyan
 Write-Host "==========================================================================" -ForegroundColor Yellow
@@ -91,7 +86,7 @@ Write-Host "Installing Playwright browsers..." -ForegroundColor Cyan
 Start-Process -FilePath $VenvPython -ArgumentList "-m playwright install" -Wait -NoNewWindow
 
 # 7. Launch App
-Write-Host "Starting Brahma AI..." -ForegroundColor Green
+Write-Host "Starting Sudarshana AI..." -ForegroundColor Green
 if (Test-Path $VenvPythonW) {
     Start-Process -FilePath $VenvPythonW -ArgumentList "main.py --startup" -WorkingDirectory $WorkingDir
 } else {

@@ -1,6 +1,6 @@
 from core.user_paths import get_user_data_dir
 """
-dashboard/server.py — Brahma Local HTTP Dashboard
+dashboard/server.py — Sudarshana Local HTTP Dashboard
 
 Plain HTTP on port 8000 (no SSL warnings, no firewall issues).
 Security at the application layer: AES-256-CBC with session-key-derived key.
@@ -19,6 +19,8 @@ import string
 import sys
 import time
 from pathlib import Path
+
+from core.security import RateLimiter, safe_join, obfuscate_error, redact_secrets
 
 _DEPS_OK = False
 try:
@@ -39,6 +41,10 @@ except Exception:
 
 BASE_DIR    = Path(__file__).resolve().parent.parent
 
+# Per-client HTTP rate limiter (protects the local dashboard from resource
+# exhaustion / flood loops). 600 requests / 60s per client is generous for UI use.
+_HTTP_RATE_LIMITER = RateLimiter(max_events=600, window_seconds=60.0)
+
 def _get_static_dir() -> Path:
     if getattr(sys, "frozen", False):
         candidate = Path(sys._MEIPASS) / "dashboard" / "static"
@@ -57,8 +63,8 @@ MAX_UPLOAD_MB = 500
 def _make_uploads_dir() -> Path:
     """Return (and create) the cross-platform uploads folder."""
     for candidate in [
-        Path.home() / "Downloads" / "Brahma Uploads",
-        Path.home() / "Documents" / "Brahma Uploads",
+        Path.home() / "Downloads" / "Sudarshana Uploads",
+        Path.home() / "Documents" / "Sudarshana Uploads",
         BASE_DIR / "uploads",
     ]:
         try:
@@ -92,7 +98,7 @@ _KEY_CHARS = [c for c in (string.ascii_uppercase + string.digits)
               if c not in ('O', 'I', 'L', '0', '1')]
 
 # ── AES-256-CBC ───────────────────────────────────────────────────────────────
-_AES_SALT = b'BRAHMA-DASHBOARD-v1'
+_AES_SALT = b'SUDARSHANA-DASHBOARD-v1'
 
 
 def _derive_key(session_key: str) -> bytes:
@@ -134,8 +140,8 @@ def _ensure_network_access(port: int) -> None:
     if sys.platform == "win32":
         import ctypes, time
 
-        port_rule = f"Brahma Dashboard Port {port}"
-        prog_rule  = "Brahma Dashboard Python"
+        port_rule = f"Sudarshana Dashboard Port {port}"
+        prog_rule  = "Sudarshana Dashboard Python"
         py_exe     = sys.executable
 
         def _netsh_rule_exists(name: str) -> bool:
@@ -191,7 +197,7 @@ def _ensure_network_access(port: int) -> None:
             )
 
         bat_body = "\r\n".join(bat_lines) + "\r\n"
-        fd, bat_path = tempfile.mkstemp(suffix=".bat", prefix="brahma_fw_")
+        fd, bat_path = tempfile.mkstemp(suffix=".bat", prefix="sudarshana_fw_")
         try:
             os.write(fd, bat_body.encode("mbcs"))   # Windows cmd.exe expects ANSI
             os.close(fd)
@@ -239,7 +245,7 @@ def _ensure_network_access(port: int) -> None:
                 print("[Dashboard] Refresh your phone browser to connect.")
             else:
                 print("[Dashboard] Setup was not allowed.")
-                print("[Dashboard] Phone connections may fail until Brahma is run as Administrator.")
+                print("[Dashboard] Phone connections may fail until Sudarshana is run as Administrator.")
         except Exception as e:
             print(f"[Dashboard] Firewall setup error: {e}")
         finally:
@@ -446,8 +452,8 @@ def _read(name: str) -> str:
 def _ensure_ssl_certs() -> bool:
     """Create local self-signed certs when missing so phones can use HTTPS."""
     certs = get_user_data_dir() / "config" / "certs"
-    key_path = certs / "brahma.key"
-    cert_path = certs / "brahma.crt"
+    key_path = certs / "sudarshana.key"
+    cert_path = certs / "sudarshana.crt"
     if key_path.exists() and cert_path.exists():
         return True
     try:
@@ -461,7 +467,7 @@ def _ensure_ssl_certs() -> bool:
         certs.mkdir(parents=True, exist_ok=True)
         key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COMMON_NAME, "Brahma AI Local Remote"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "Sudarshana AI Local Remote"),
         ])
         alt_names = [
             x509.DNSName("localhost"),
@@ -574,6 +580,26 @@ class DashboardServer:
     def _build_app(self) -> "FastAPI":
         app = FastAPI(docs_url=None, redoc_url=None)
 
+        @app.middleware("http")
+        async def _rate_limit_middleware(request: Request, call_next):
+            client = ""
+            try:
+                client = (request.client.host if request.client else "") or request.headers.get("x-forwarded-for", "")
+            except Exception:
+                client = ""
+            if not _HTTP_RATE_LIMITER.allow(client or "unknown"):
+                return JSONResponse(
+                    {"ok": False, "error": "Too many requests. Slow down."},
+                    status_code=429,
+                )
+            return await call_next(request)
+
+        @app.exception_handler(Exception)
+        async def _generic_exception_handler(request: Request, exc: Exception):
+            # Obfuscate internals: never leak stack traces / paths / tokens to clients.
+            payload = obfuscate_error(exc, context=f"{request.method} {request.url.path}")
+            return JSONResponse(payload, status_code=500)
+
         def _auth(req: Request) -> bool:
             tok = req.headers.get("authorization", "").removeprefix("Bearer ").strip()
             return bool(tok) and tok in self._tokens
@@ -635,7 +661,7 @@ class DashboardServer:
   h2{color:#f87171;margin-bottom:12px}p{color:#5e6a7e;font-size:14px}
 </style></head>
 <body><div><h2>Link Expired</h2>
-<p>Press <strong style="color:#dde3ed">Mobile Connect</strong> in Brahma to get a new QR code.</p>
+<p>Press <strong style="color:#dde3ed">Mobile Connect</strong> in Sudarshana to get a new QR code.</p>
 </div></body></html>""")
 
             del self._pending_keys[key]
@@ -661,12 +687,12 @@ class DashboardServer:
 </style></head>
 <body>
 <script>
-  sessionStorage.setItem('brahma_token','{tok}');
-  sessionStorage.setItem('brahma_key','{key}');
-  localStorage.setItem('brahma_device_token','{dev_tok}');
+  sessionStorage.setItem('sudarshana_token','{tok}');
+  sessionStorage.setItem('sudarshana_key','{key}');
+  localStorage.setItem('sudarshana_device_token','{dev_tok}');
   setTimeout(function(){{location.replace('/')}},400);
 </script>
-<p>Connecting to Brahma…</p>
+<p>Connecting to Sudarshana…</p>
 </body></html>""")
 
         @app.post("/api/device-login")
@@ -726,6 +752,46 @@ class DashboardServer:
             if self._wake_callback:
                 self._wake_callback()
             return JSONResponse({"ok": True})
+
+        # ── Voice biometric security (dashboard toggle) ──────────────────────
+        @app.get("/api/voice-security/status")
+        async def voice_security_status(req: Request):
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            try:
+                from core import voice_security as _vs
+                st = _vs.status()
+            except Exception:
+                st = {
+                    "enabled": False,
+                    "enrolled": False,
+                    "registered_user": "User-1",
+                    "session_authorized": False,
+                    "hint": "",
+                    "has_master_password": False,
+                }
+            return JSONResponse(st)
+
+        @app.post("/api/voice-security/toggle")
+        async def voice_security_toggle(req: Request):
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            try:
+                body = await req.json()
+            except Exception:
+                body = {}
+            enable = bool(body.get("enabled"))
+            try:
+                from core import voice_security as _vs
+                if enable and not _vs.has_passphrase():
+                    return JSONResponse(
+                        {"ok": False, "error": "No voice password enrolled yet. Say 'register voice password' first."},
+                        status_code=400,
+                    )
+                _vs.set_enabled(enable)
+                return JSONResponse({"ok": True, **_vs.status()})
+            except Exception as exc:
+                return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
 
         # ── Phone mic real-time audio → Gemini Live ──────────────────────────
 
@@ -837,17 +903,21 @@ class DashboardServer:
             tok = token.strip()
             if not tok or tok not in self._tokens:
                 return JSONResponse({"error": "Unauthorized"}, status_code=401)
-            safe = re.sub(r'[/\\]', '', filename)
-            path = self._uploads_dir / safe
+            try:
+                path = safe_join(self._uploads_dir, filename)
+            except ValueError:
+                return JSONResponse({"error": "Not found"}, status_code=404)
             if not path.exists() or not path.is_file():
                 return JSONResponse({"error": "Not found"}, status_code=404)
-            return FileResponse(str(path), filename=safe)
+            return FileResponse(str(path), filename=path.name)
 
         @app.get("/web_background/{filename:path}")
         async def web_background_static(filename: str):
             bg_dir = BASE_DIR / "assets" / "web_background"
-            safe = filename if filename else "index.html"
-            target = bg_dir / safe
+            try:
+                target = safe_join(bg_dir, filename or "index.html", allow_nested=True)
+            except ValueError:
+                return JSONResponse({"error": "Not found"}, status_code=404)
             if target.exists() and target.is_file():
                 return FileResponse(str(target))
             return JSONResponse({"error": "Not found"}, status_code=404)
@@ -885,8 +955,8 @@ class DashboardServer:
     # ── serve ─────────────────────────────────────────────────────────────
     async def _serve_alias(self) -> None:
         """Legacy HTTPS alias server kept for compatibility, but not used for QR pairing."""
-        ssl_key  = get_user_data_dir() / "config" / "certs" / "brahma.key"
-        ssl_cert = get_user_data_dir() / "config" / "certs" / "brahma.crt"
+        ssl_key  = get_user_data_dir() / "config" / "certs" / "sudarshana.key"
+        ssl_cert = get_user_data_dir() / "config" / "certs" / "sudarshana.crt"
         asyncio.get_event_loop().run_in_executor(None, _ensure_network_access, PORT + 1)
         cfg = uvicorn.Config(
             self.app, host="0.0.0.0", port=PORT + 1, log_level="warning",
@@ -911,5 +981,5 @@ class DashboardServer:
         )
 
         print(f"[Dashboard] http://{self._ip}:{PORT}")
-        print("[Dashboard] Press 'Mobile Connect' in Brahma UI to get the QR code.")
+        print("[Dashboard] Press 'Mobile Connect' in Sudarshana UI to get the QR code.")
         await uvicorn.Server(cfg).serve()

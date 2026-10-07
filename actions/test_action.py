@@ -1,7 +1,9 @@
 """
-Demonstration Action for Testing Brahma's Autonomous Self-Patching Engine.
+Demonstration Action for Testing Sudarshana's Autonomous Self-Patching Engine.
 Contains an intentional edge-case bug (ZeroDivisionError) for live self-repair verification.
 """
+
+__test__ = False  # not a pytest test; used as a self-heal demo fixture
 
 def test_action(parameters: dict = None, player=None, speak=None, **kwargs):
     params = parameters or {}

@@ -128,6 +128,6 @@ def weather_action(
 def _speak_and_log(message: str, player=None):
     if player:
         try:
-            player.write_log(f"Brahma AI: {message}")
+            player.write_log(f"Sudarshana AI: {message}")
         except Exception:
             pass

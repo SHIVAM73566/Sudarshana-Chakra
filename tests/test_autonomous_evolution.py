@@ -8,9 +8,9 @@ from core.learned_rules import LearnedRulesEngine
 from core.dynamic_registry import DynamicToolRegistry
 
 
-def test_planner_prompt_has_brahma_evo_rebrand_and_rules():
-    assert "Brahma Evo" in PLANNER_PROMPT
-    assert "Brahma AI - Lite" not in PLANNER_PROMPT
+def test_planner_prompt_has_sudarshana_evo_rebrand_and_rules():
+    assert "Sudarshana Chakra" in PLANNER_PROMPT
+    assert "Sudarshana AI - Lite" not in PLANNER_PROMPT
     assert "Echo HUD" not in PLANNER_PROMPT
     assert "AUTONOMOUS SELF-EVOLUTION" in PLANNER_PROMPT
 

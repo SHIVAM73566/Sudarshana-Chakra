@@ -1,5 +1,35 @@
 from core.user_paths import get_user_data_dir
+from core.env import load_dotenv
+from core.brand import (
+    BRAND_NAME,
+    APP_CODENAME,
+    BRAND_TAGLINE,
+    assert_brand_integrity,
+    BrandIntegrityError,
+)
 import os
+
+load_dotenv()
+
+# Immutable brand gate: abort immediately if the brand has been tampered with.
+try:
+    assert_brand_integrity()
+except BrandIntegrityError:
+    raise SystemExit(1)
+
+# Immutable avatar: restore the locked portrait if it was deleted or replaced.
+try:
+    from core.avatar import ensure_avatar_asset
+    ensure_avatar_asset()
+except Exception:
+    pass
+
+# Immutable avatar: reinstate the locked portrait asset if deleted/replaced.
+try:
+    from core.avatar import ensure_avatar_asset
+    ensure_avatar_asset()
+except Exception:
+    pass
 
 # Hardware acceleration & WebGL flags for smooth 180fps+ rendering in Chromium
 os.environ.setdefault(
@@ -51,7 +81,7 @@ except Exception:
 import sounddevice as sd
 from google import genai
 from google.genai import types
-from ui import BrahmaUI
+from ui import SudarshanaUI
 from memory.memory_manager import (
     load_memory, update_memory, format_memory_for_prompt,
     should_extract_memory, extract_memory, auto_learn_interaction
@@ -73,7 +103,7 @@ from actions.file_controller   import file_controller
 from actions.office_builder     import create_presentation, create_spreadsheet
 from actions.docx_tools        import word_document
 from actions.pdf_tools         import create_pdf
-from actions.brahma_connect    import (
+from actions.sudarshana_connect    import (
     connect_list_devices,
     connect_get_device,
     connect_get_capabilities,
@@ -87,6 +117,7 @@ from actions.game_updater      import game_updater
 from actions.attention_monitor import AttentionMonitor, speak_native, stop_native_speech, handle_call_action, read_event_preview, set_speech_sink
 # from actions.daily_briefing import compile_daily_briefing
 from llm_client import client as openrouter_client
+from nvidia_client import client as nvidia_client
 from workspace_store import store as workspace_store
 from smart_home.service import SmartHomeService
 from plugin_manager import PluginManager
@@ -106,9 +137,9 @@ except ImportError:
         start_ig_daemon = None
 
 try:
-    from brahma_connect.service import get_service as get_brahma_connect_service
+    from sudarshana_connect.service import get_service as get_sudarshana_connect_service
 except Exception:
-    get_brahma_connect_service = None
+    get_sudarshana_connect_service = None
 
 
 def get_base_dir():
@@ -120,8 +151,9 @@ def get_base_dir():
 BASE_DIR        = get_base_dir()
 API_CONFIG_PATH = get_user_data_dir() / "config" / "api_keys.json"
 PROMPT_PATH     = BASE_DIR / "core" / "prompt.txt"
-STARTUP_LOG     = Path(os.environ.get("LOCALAPPDATA", str(BASE_DIR))) / "Brahma Evo" / "startup.log"
+STARTUP_LOG     = Path(os.environ.get("LOCALAPPDATA", str(BASE_DIR))) / "Sudarshana Chakra" / "startup.log"
 LIVE_MODEL          = "models/gemini-2.5-flash-native-audio-preview-12-2025"
+GEMINI_TEXT_MODEL   = "gemini-3.8-flash"
 CHANNELS            = 1
 SEND_SAMPLE_RATE    = 16000
 RECEIVE_SAMPLE_RATE = 24000
@@ -130,6 +162,9 @@ LIVE_CONNECT_TIMEOUT = 12
 
 
 def _get_api_key() -> str:
+    env_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if env_key:
+        return env_key
     with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
         return json.load(f)["gemini_api_key"]
 
@@ -168,9 +203,9 @@ def _ensure_desktop_shortcut() -> None:
             desktop_dir = Path(os.path.expanduser("~")) / "Desktop"
             
         desktop_dir.mkdir(parents=True, exist_ok=True)
-        shortcut_path = desktop_dir / "Brahma Evo.lnk"
+        shortcut_path = desktop_dir / "Sudarshana Chakra.lnk"
         script_path = BASE_DIR / "main.py"
-        icon_path = BASE_DIR / "assets" / "Brahma_Lite_Logo.ico"
+        icon_path = BASE_DIR / "assets" / "Sudarshana_Lite_Logo.ico"
 
         if not icon_path.exists():
             icon_path = None
@@ -201,7 +236,7 @@ def _ensure_desktop_shortcut() -> None:
             f"$Shortcut.Arguments = '{_ps_escape(shortcut_args)}'",
             f"$Shortcut.WorkingDirectory = '{_ps_escape(str(BASE_DIR))}'",
             "$Shortcut.WindowStyle = 1",
-            "$Shortcut.Description = 'Launch Brahma Evo'",
+            "$Shortcut.Description = 'Launch Sudarshana Chakra'",
             f"if ('{_ps_escape(icon_value)}') {{ $Shortcut.IconLocation = '{_ps_escape(icon_value)},0' }}",
             "$Shortcut.Save()",
         ])
@@ -224,7 +259,7 @@ def _load_system_prompt() -> str:
         base_prompt = PROMPT_PATH.read_text(encoding="utf-8")
     except Exception:
         base_prompt = (
-            "You are Brahma Evo, a calm, direct, and professional AI assistant. "
+            "You are Sudarshana Chakra, a calm, direct, and professional AI assistant. "
             "Be concise, direct, and always use the provided tools to complete tasks. "
             "Never simulate or guess results — always call the appropriate tool. "
             "If the user asks to create, build, launch, or open a website, always use the selected workspace folder."
@@ -232,7 +267,7 @@ def _load_system_prompt() -> str:
         
     try:
         from core.identity import identity
-        ast_name = identity.get_assistant_name() or "Brahma Evo"
+        ast_name = identity.get_assistant_name() or "Sudarshana Chakra"
         own_name = identity.get_owner_name() or "the user"
         role = identity.get_owner_role()
         mode = identity.get_behavior_mode()
@@ -277,7 +312,7 @@ def _speak_daily_briefing(ui=None, speak=None) -> None:
         data, narrative = compile_unified_briefing()
         if ui:
             ui.show_daily_briefing(data)
-            ui.write_log(f"Brahma Evo: {narrative}")
+            ui.write_log(f"Sudarshana Chakra: {narrative}")
         (speak or speak_native)(narrative)
     except Exception as e:
         print(f"[DailyBriefing] Error: {e}")
@@ -312,20 +347,28 @@ def _gemini_text_reply(prompt: str) -> str:
         http_options={"api_version": "v1beta"},
     )
     system_prompt = (
-        "You are Brahma Evo, a concise, helpful desktop assistant. "
+        "You are Sudarshana Chakra, a concise, helpful desktop assistant. "
         "Reply naturally and briefly. Do not mention internal implementation details."
     )
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=GEMINI_TEXT_MODEL,
         contents=f"{system_prompt}\n\nUser: {prompt}",
         config={"temperature": 0.6},
     )
     return _extract_gemini_text(response)
 
 
+def _nvidia_text_reply(prompt: str) -> str:
+    system_prompt = (
+        "You are Sudarshana Chakra, a concise, helpful desktop assistant. "
+        "Reply naturally and briefly. Do not mention internal implementation details."
+    )
+    return nvidia_client.chat(prompt, system=system_prompt, temperature=0.6)
+
+
 def _ig_gemini_reply(username: str, text: str) -> str:
     system_prompt = (
-        "You are Brahma Evo, an AI personal assistant acting on behalf of your user. "
+        "You are Sudarshana Chakra, an AI personal assistant acting on behalf of your user. "
         "You have taken over their Instagram chat with the user's permission. "
         "Reply naturally, briefly, and conversationally to the incoming message. "
         "Do not sound like a bot. Keep your replies under 2 sentences."
@@ -338,7 +381,7 @@ def _ig_gemini_reply(username: str, text: str) -> str:
             http_options={"api_version": "v1beta"},
         )
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=GEMINI_TEXT_MODEL,
             contents=f"{system_prompt}\n\nUser: {prompt}",
             config={"temperature": 0.6},
         )
@@ -358,7 +401,7 @@ def _ig_gemini_reply(username: str, text: str) -> str:
 
 def _clipboard_gemini_reply(text: str) -> str:
     system_prompt = (
-        "You are Brahma Evo, a witty and helpful AI assistant. "
+        "You are Sudarshana Chakra, a witty and helpful AI assistant. "
         "The user just copied the following text to their clipboard. "
         "Make a very short, interesting, or helpful 1-sentence comment or question about it. "
         "Do not offer to 'help' or ask 'how can I help'. Just make a standalone witty observation or summary."
@@ -370,7 +413,7 @@ def _clipboard_gemini_reply(text: str) -> str:
             http_options={"api_version": "v1beta"},
         )
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=GEMINI_TEXT_MODEL,
             contents=f"{system_prompt}\n\nClipboard Text: {prompt}",
             config={"temperature": 0.8},
         )
@@ -535,10 +578,10 @@ def _wakeword_detected(text: str) -> bool:
     if not words:
         return False
     phrases = (
-        "brahma evo",
-        "hey brahma evo",
-        "hi brahma evo",
-        "hello brahma evo",
+        "sudarshana chakra",
+        "hey sudarshana chakra",
+        "hi sudarshana chakra",
+        "hello sudarshana chakra",
         "hey",
         "hi",
         "hello",
@@ -546,7 +589,7 @@ def _wakeword_detected(text: str) -> bool:
     compact = " ".join(words)
     if compact in phrases or any(p in compact for p in phrases):
         return True
-    return any(word in {"brahma evo", "hey", "hi", "hello"} for word in words)
+    return any(word in {"sudarshana chakra", "hey", "hi", "hello"} for word in words)
 
 
 def _build_task_plan(text: str) -> list[str]:
@@ -610,11 +653,11 @@ def _build_task_plan(text: str) -> list[str]:
 
 _last_memory_input = ""
 
-def _update_memory_async(user_text: str, brahma_text: str) -> None:
+def _update_memory_async(user_text: str, sudarshana_text: str) -> None:
     global _last_memory_input
 
     user_text   = (user_text   or "").strip()
-    brahma_text = (brahma_text or "").strip()
+    sudarshana_text = (sudarshana_text or "").strip()
 
     if len(user_text) < 4 or user_text == _last_memory_input:
         return
@@ -622,7 +665,7 @@ def _update_memory_async(user_text: str, brahma_text: str) -> None:
 
     # Fast deterministic heuristic extraction (Pillar 5 - Living Knowledge Graph)
     try:
-        learned = auto_learn_interaction(user_text, brahma_text)
+        learned = auto_learn_interaction(user_text, sudarshana_text)
         if learned:
             print(f"[Memory] 🧠 Auto-learned: {list(learned.keys())}")
     except Exception as exc:
@@ -630,9 +673,9 @@ def _update_memory_async(user_text: str, brahma_text: str) -> None:
 
     try:
         api_key = _get_api_key()
-        if not should_extract_memory(user_text, brahma_text, api_key):
+        if not should_extract_memory(user_text, sudarshana_text, api_key):
             return
-        data = extract_memory(user_text, brahma_text, api_key)
+        data = extract_memory(user_text, sudarshana_text, api_key)
         if data:
             update_memory(data)
             print(f"[Memory] ✅ {list(data.keys())}")
@@ -1098,7 +1141,7 @@ TOOL_DECLARATIONS = [
     {
         "name": "connect_list_devices",
         "description": (
-            "Lists devices connected to Brahma Connect. Use when the user asks what devices are connected, "
+            "Lists devices connected to Sudarshana Connect. Use when the user asks what devices are connected, "
             "what is online, or wants a simple inventory of paired devices."
         ),
         "parameters": {
@@ -1146,7 +1189,7 @@ TOOL_DECLARATIONS = [
     {
         "name": "connect_execute",
         "description": (
-            "Routes a Brahma Connect command to a paired device through the gateway. "
+            "Routes a Sudarshana Connect command to a paired device through the gateway. "
             "Use for actions such as launch_app, open_url, get_battery, capture_screen, take_photo, "
             "clipboard_get, clipboard_set, send_file, receive_file, media_play, media_pause, volume_set, "
             "notification_list, get_device_info, close_app, mouse_move, keyboard_type, unlock_phone, file_list, file_read, file_write, file_delete."
@@ -1180,7 +1223,7 @@ TOOL_DECLARATIONS = [
     {
         "name": "connect_pair_device",
         "description": (
-            "Creates or approves Brahma Connect pairing. Use to generate a QR code / pairing code for a new device, "
+            "Creates or approves Sudarshana Connect pairing. Use to generate a QR code / pairing code for a new device, "
             "or to approve a pending pairing request."
         ),
         "parameters": {
@@ -1196,7 +1239,7 @@ TOOL_DECLARATIONS = [
     {
         "name": "connect_disconnect_device",
         "description": (
-            "Disconnects a device from Brahma Connect and marks it offline. "
+            "Disconnects a device from Sudarshana Connect and marks it offline. "
             "Use when the user asks to disconnect, log out, or stop a paired device."
         ),
         "parameters": {
@@ -1446,7 +1489,7 @@ TOOL_DECLARATIONS = [
         "name": "presentation_builder",
         "description": (
             "Creates editable PowerPoint presentations (.pptx) from a structured slide outline. "
-            "Brahma Evo automatically infers the best visual style from the topic, searches for a matching online template when available, "
+            "Sudarshana Chakra automatically infers the best visual style from the topic, searches for a matching online template when available, "
             "reuses cached templates, and falls back to the built-in designer if no suitable template is found. "
             "Use when the user asks for a deck, slideshow, presentation, pitch deck, or report slides."
         ),
@@ -1457,7 +1500,7 @@ TOOL_DECLARATIONS = [
                 "subtitle": {"type": "STRING", "description": "Optional subtitle or audience line"},
                 "theme": {
                     "type": "STRING",
-                    "description": "Optional presentation theme or visual direction such as neon, corporate, luxury, academic, sunset, or creative. If omitted, Brahma Evo infers the best style automatically."
+                    "description": "Optional presentation theme or visual direction such as neon, corporate, luxury, academic, sunset, or creative. If omitted, Sudarshana Chakra infers the best style automatically."
                 },
                 "outline": {
                     "type": "STRING",
@@ -1613,11 +1656,11 @@ TOOL_DECLARATIONS = [
         }
     },
     {
-        "name": "shutdown_brahma",
+        "name": "shutdown_sudarshana",
         "description": (
             "Shuts down the assistant completely. "
         "Call this when the user expresses intent to end the conversation, "
-        "close the assistant, say goodbye, or stop Brahma Evo. "
+        "close the assistant, say goodbye, or stop Sudarshana Chakra. "
         "The user can say this in ANY language."
     ),
     "parameters": {
@@ -1894,7 +1937,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "geospatial_globe",
-        "description": "Opens Brahma's interactive 3D map for routes, live aircraft, weather, earthquakes, nearby places, and ISS tracking.",
+        "description": "Opens Sudarshana's interactive 3D map for routes, live aircraft, weather, earthquakes, nearby places, and ISS tracking.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -1911,7 +1954,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "call_screening",
-        "description": "Screens an incoming call with Brahma as an AI attendant. Answering always waits for the user to confirm on the Echo HUD.",
+        "description": "Screens an incoming call with Sudarshana as an AI attendant. Answering always waits for the user to confirm on the Echo HUD.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -1937,7 +1980,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "dynamic_skill",
-        "description": "Lists and runs installed Brahma skills, including stock, crypto, cricket, speed-test, and ISS examples. Running a skill requires user confirmation.",
+        "description": "Lists and runs installed Sudarshana skills, including stock, crypto, cricket, speed-test, and ISS examples. Running a skill requires user confirmation.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -2030,9 +2073,9 @@ TOOL_DECLARATIONS = [
 ]
 
 
-class BrahmaLive:
+class SudarshanaLive:
 
-    def __init__(self, ui: BrahmaUI, dashboard=None, dashboard_started: bool = False, enable_dashboard: bool = True):
+    def __init__(self, ui: SudarshanaUI, dashboard=None, dashboard_started: bool = False, enable_dashboard: bool = True):
         self.ui             = ui
         self._smart_home    = SmartHomeService()
         self.session        = None
@@ -2191,6 +2234,19 @@ class BrahmaLive:
         text = (text or "").strip()
         if not text:
             return
+        try:
+            from core import voice_security as _voice_security
+            _handled, _allowed, _sec_msg = _voice_security.gate_text(text, source=source)
+            if _sec_msg:
+                self.ui.write_log(f"🔐 SECURITY: {_sec_msg}")
+                try:
+                    self.speak(_sec_msg, proactive=True)
+                except Exception:
+                    pass
+            if _handled or not _allowed:
+                return
+        except Exception as _sec_err:
+            print(f"[VoiceSecurity] gate error: {_sec_err}")
         if len(text) > 4:
             threading.Thread(
                 target=_update_memory_async,
@@ -2247,7 +2303,7 @@ class BrahmaLive:
         if skill_goal is not None:
             if not skill_goal:
                 prompt = "What should the new skill or feature do?"
-                self.ui.write_log(f"Brahma Evo: {prompt}")
+                self.ui.write_log(f"Sudarshana Chakra: {prompt}")
                 self.speak(prompt)
                 return
 
@@ -2284,7 +2340,7 @@ class BrahmaLive:
                             out_text = str(res.get("summary") or res.get("output") or res.get("text") or res).strip()
                         else:
                             out_text = str(res).strip()
-                        self.ui.write_log(f"Brahma Evo [{skill_name}]:\n{out_text}")
+                        self.ui.write_log(f"Sudarshana Chakra [{skill_name}]:\n{out_text}")
                         if hasattr(self.ui, "finish_task_workspace"):
                             self.ui.finish_task_workspace(out_text, f"{skill_name} completed.", 100)
                         if hasattr(self.ui, "show_hud_deliverable"):
@@ -2339,7 +2395,7 @@ class BrahmaLive:
             if not recipient:
                 self._email_step = 0
                 prompt = "Who would you like to send the email to?"
-                self.ui.write_log(f"Brahma Evo: {prompt}")
+                self.ui.write_log(f"Sudarshana Chakra: {prompt}")
                 self.speak(prompt)
                 try:
                     self.ui.update_task_workspace(
@@ -2352,7 +2408,7 @@ class BrahmaLive:
             else:
                 self._email_step = 1
                 prompt = "Which email app would you like to use? (Gmail, default mail app, etc.)"
-                self.ui.write_log(f"Brahma Evo: {prompt}")
+                self.ui.write_log(f"Sudarshana Chakra: {prompt}")
                 self.speak(prompt)
                 try:
                     self.ui.update_task_workspace(
@@ -2400,15 +2456,15 @@ class BrahmaLive:
             devices = self._smart_home.list_devices()
             routed_text_home = sd_mgr.route_command(text, devices)
             if routed_text_home != text:
-                print(f"[BRAHMA EVO] Redirection: '{text}' -> '{routed_text_home}'")
+                print(f"[SUDARSHANA CHAKRA] Redirection: '{text}' -> '{routed_text_home}'")
                 text = routed_text_home
         except Exception as e:
-            print(f"[BRAHMA EVO] Redirection error: {e}")
+            print(f"[SUDARSHANA CHAKRA] Redirection error: {e}")
 
         developer_settings = self.ui._load_app_settings() if hasattr(self.ui, "_load_app_settings") else {}
         developer_workspace = str(developer_settings.get("developer_mode_workspace", "")).strip()
         if not developer_workspace:
-            developer_workspace = str(Path.home() / "Desktop" / "BrahmaProjects")
+            developer_workspace = str(Path.home() / "Desktop" / "SudarshanaProjects")
             Path(developer_workspace).mkdir(parents=True, exist_ok=True)
 
         presentation_request = _looks_like_presentation_request(text)
@@ -2427,7 +2483,7 @@ class BrahmaLive:
                 try:
                     from actions.office_generator import generate_presentation_from_prompt
                     res = generate_presentation_from_prompt(text, player=self.ui, speak=self.speak)
-                    self.ui.write_log(f"[BrahmaOffice] {res}")
+                    self.ui.write_log(f"[SudarshanaOffice] {res}")
                     if hasattr(self.ui, "update_task_workspace"):
                         self.ui.update_task_workspace(status="Presentation Completed", output=res, percent=100)
                     self.speak("Your presentation has been created and saved to Desktop, sir.")
@@ -2453,7 +2509,7 @@ class BrahmaLive:
                 try:
                     from actions.office_generator import generate_spreadsheet_from_prompt
                     res = generate_spreadsheet_from_prompt(text, player=self.ui, speak=self.speak)
-                    self.ui.write_log(f"[BrahmaOffice] {res}")
+                    self.ui.write_log(f"[SudarshanaOffice] {res}")
                     if hasattr(self.ui, "update_task_workspace"):
                         self.ui.update_task_workspace(status="Spreadsheet Completed", output=res, percent=100)
                     self.speak("Your spreadsheet workbook has been created and saved to Desktop, sir.")
@@ -2470,19 +2526,19 @@ class BrahmaLive:
         code_request = (not presentation_request and not spreadsheet_request) and _looks_like_code_request(text) and any(w in text.lower() for w in ("app", "website", "web", "program", "script", "project", "game", "calc", "html", "react"))
 
         if website_request or code_request:
-            self.speak("Working on your project with Brahma Dev...")
+            self.speak("Working on your project with Sudarshana Dev...")
             if hasattr(self.ui, "begin_task_workspace"):
                 self.ui.begin_task_workspace(text, ["Analyzing specifications", "Scaffolding files", "Writing code", "Verifying build"], source=source or "local")
 
-            def _run_brahma_dev():
+            def _run_sudarshana_dev():
                 try:
                     import webbrowser
-                    from actions.brahma_dev_agent import run_dev_agent
+                    from actions.sudarshana_dev_agent import run_dev_agent
                     res = run_dev_agent({
                         "description": text,
                         "workspace_path": developer_workspace
                     }, speak=self.speak)
-                    self.ui.write_log(f"[BrahmaDev] {res[:400]}")
+                    self.ui.write_log(f"[SudarshanaDev] {res[:400]}")
 
                     if "encountered an error during inference" in res or "LLM error:" in res:
                         if hasattr(self.ui, "update_task_workspace"):
@@ -2509,12 +2565,12 @@ class BrahmaLive:
                     except Exception:
                         pass
                 except Exception as exc:
-                    self.ui.write_log(f"ERR: Brahma Dev failed: {exc}")
+                    self.ui.write_log(f"ERR: Sudarshana Dev failed: {exc}")
                     if hasattr(self.ui, "update_task_workspace"):
                         self.ui.update_task_workspace(status="Build Failed", output=str(exc), percent=0)
                     self.speak("There was an issue building the project, sir. Please check the logs.")
 
-            threading.Thread(target=_run_brahma_dev, daemon=True).start()
+            threading.Thread(target=_run_sudarshana_dev, daemon=True).start()
             return
 
         # Google Workspace Direct Command Handling (Gmail & Calendar checks)
@@ -2665,7 +2721,7 @@ class BrahmaLive:
                     from actions.auto_heal_engine import AutoHealEngine
                     tb_str = traceback.format_exc()
                     AutoHealEngine.record_last_error(tb_str)
-                    err_msg = f"Simulated bug triggered in test_action.py: {type(exc).__name__}. Traceback captured! You can now say 'Brahma, fix that bug'."
+                    err_msg = f"Simulated bug triggered in test_action.py: {type(exc).__name__}. Traceback captured! You can now say 'Sudarshana, fix that bug'."
                     self.speak(err_msg)
                     self.ui.write_log(f"[AutoHeal Test] {err_msg}")
                     if hasattr(self.ui, "finish_task_workspace"):
@@ -2775,7 +2831,7 @@ class BrahmaLive:
             self.ui.begin_task_workspace(text, _build_task_plan(text), source=source or "local")
         except Exception:
             pass
-        if source != "instagram" and self._handle_brahma_connect_command(text, source=source or "local"):
+        if source != "instagram" and self._handle_sudarshana_connect_command(text, source=source or "local"):
             return
         if self._handle_smart_home_command(text, source=source or "local"):
             return
@@ -2783,7 +2839,7 @@ class BrahmaLive:
             try:
                 self.ui.update_task_workspace(
                     status="Scanning screen",
-                    output="Brahma Evo is inspecting the screen for what you asked about.",
+                    output="Sudarshana Chakra is inspecting the screen for what you asked about.",
                     percent=40,
                 )
             except Exception:
@@ -2833,7 +2889,11 @@ class BrahmaLive:
         else:
             is_local_preferred = False
 
-        if is_local_preferred or self._use_openrouter_first or not self._loop or not self.session:
+        # Gemini Live is only usable when Gemini is the active provider; other cloud
+        # providers (NVIDIA / OpenRouter) are handled by the fallback reply engine.
+        is_gemini_provider = configured_provider in ("Gemini", "Google Gemini")
+
+        if is_local_preferred or not is_gemini_provider or self._use_openrouter_first or not self._loop or not self.session:
             threading.Thread(target=self._fallback_reply, args=(text, memory_ctx), daemon=True).start()
             return
         self.ui.set_state("THINKING")
@@ -2851,7 +2911,7 @@ class BrahmaLive:
         
         # Don't touch commands targeted at phone or mobile
         mobile_words = (
-            "phone", "mobile", "android", "tablet", "brahma connect",
+            "phone", "mobile", "android", "tablet", "sudarshana connect",
             "my phone", "my mobile", "my tablet", "my android", "flashlight", "torch"
         )
         if any(word in normalized for word in mobile_words):
@@ -2900,7 +2960,7 @@ class BrahmaLive:
                 percent=100,
                 source=source,
             )
-            self.ui.write_log(f"Brahma Evo: {detail}")
+            self.ui.write_log(f"Sudarshana Chakra: {detail}")
             self.speak(detail)
             if not self.ui.muted:
                 self.ui.set_state("LISTENING")
@@ -2956,7 +3016,7 @@ class BrahmaLive:
         candidate = re.sub(r"\s+", " ", candidate)
         return candidate
 
-    def _handle_brahma_connect_command(self, text: str, source: str = "local") -> bool:
+    def _handle_sudarshana_connect_command(self, text: str, source: str = "local") -> bool:
         normalized = re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s%]", " ", text.lower())).strip()
         
         # Explicit mobile indicators: only route to phone if user explicitly mentions phone/mobile
@@ -2964,7 +3024,7 @@ class BrahmaLive:
         is_flashlight = "flashlight" in normalized or "torch" in normalized
         is_ring_phone = any(p in normalized for p in ("ring phone", "ring my phone", "find my phone", "find phone", "locate phone"))
         has_phone_ref = any(token in normalized for token in (
-            "phone", "mobile", "android", "tablet", "brahma connect",
+            "phone", "mobile", "android", "tablet", "sudarshana connect",
             "my phone", "my mobile", "my tablet", "my android"
         ))
 
@@ -3073,13 +3133,13 @@ class BrahmaLive:
             result = json.loads(result_json)
             if result.get("success", False):
                 detail = str(result.get("detail") or result.get("error") or "Device command completed.")
-                title = f"Brahma Connect: {action}"
+                title = f"Sudarshana Connect: {action}"
                 self.ui.update_task_workspace(
                     title=title,
                     command=text,
                     plan=[
                         "Identify the paired phone or device",
-                        "Route the command through Brahma Connect",
+                        "Route the command through Sudarshana Connect",
                         "Verify the device response",
                         "Report the result",
                     ],
@@ -3088,13 +3148,13 @@ class BrahmaLive:
                     percent=100,
                     source=source,
                 )
-                self.ui.write_log(f"Brahma Evo: {detail}")
+                self.ui.write_log(f"Sudarshana Chakra: {detail}")
                 self.speak(detail)
                 if not self.ui.muted:
                     self.ui.set_state("LISTENING")
                 return True
 
-            self.ui.write_log(f"ERR: Brahma Connect command failed: {result.get('error') or 'Unknown error'}")
+            self.ui.write_log(f"ERR: Sudarshana Connect command failed: {result.get('error') or 'Unknown error'}")
             return False
         except Exception:
             return False
@@ -3160,7 +3220,7 @@ class BrahmaLive:
 
     def _announce_attention(self, event: dict):
         msg = self._attention_message(event)
-        self.ui.write_log(f"Brahma Evo: {msg}")
+        self.ui.write_log(f"Sudarshana Chakra: {msg}")
         if self.session and self._loop:
             self.speak(msg)
         else:
@@ -3233,7 +3293,7 @@ class BrahmaLive:
         if summary:
             self.ui.write_log(f"[Meeting] {summary}")
         if answer:
-            self.ui.write_log(f"Brahma Evo: {answer}")
+            self.ui.write_log(f"Sudarshana Chakra: {answer}")
 
     def _on_meeting_state(self, state: str):
         if state == "LISTENING":
@@ -3254,7 +3314,7 @@ class BrahmaLive:
             self._reply_mode = True
 
         message = "What would you like to say in reply?"
-        self.ui.write_log(f"Brahma Evo: {message}")
+        self.ui.write_log(f"Sudarshana Chakra: {message}")
         if self.session and self._loop:
             self.speak(message)
         else:
@@ -3381,7 +3441,7 @@ class BrahmaLive:
         try:
             client = genai.Client(api_key=_get_api_key(), http_options={"api_version": "v1beta"})
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=GEMINI_TEXT_MODEL,
                 contents=f"{system_prompt}\n\nUser Response: {text}",
                 config={"temperature": 0.1, "response_mime_type": "application/json"}
             )
@@ -3400,7 +3460,7 @@ class BrahmaLive:
                     cleaned = re.sub(pattern, "", text, flags=re.IGNORECASE).strip()
                     if cleaned:
                         return "MANUAL_REPLY", cleaned
-            if len(text.strip().split()) >= 2 and not any(g in lower for g in ("hello", "hey brahma", "who are you")):
+            if len(text.strip().split()) >= 2 and not any(g in lower for g in ("hello", "hey sudarshana", "who are you")):
                 return "MANUAL_REPLY", text.strip()
             return "IGNORE", ""
 
@@ -3415,7 +3475,7 @@ class BrahmaLive:
             if intent == "CANCEL":
                 self._ig_reply_mode = False
                 msg = "Instagram reply cancelled."
-                self.ui.write_log(f"Brahma Evo: {msg}")
+                self.ui.write_log(f"Sudarshana Chakra: {msg}")
                 self.speak(msg)
                 self._ig_pending_thread = None
                 return True
@@ -3459,7 +3519,7 @@ class BrahmaLive:
             self._email_step = 0
             self._email_profiles = {}
             msg = "Email sending cancelled, sir."
-            self.ui.write_log(f"Brahma Evo: {msg}")
+            self.ui.write_log(f"Sudarshana Chakra: {msg}")
             self.speak(msg)
             try:
                 self.ui.finish_task_workspace("Email sending cancelled.", "Cancelled", 100)
@@ -3472,7 +3532,7 @@ class BrahmaLive:
             self._email_recipient = text.strip()
             self._email_step = 1
             prompt = "Which email app would you like to use? (Gmail, default mail app, etc.)"
-            self.ui.write_log(f"Brahma Evo: {prompt}")
+            self.ui.write_log(f"Sudarshana Chakra: {prompt}")
             self.speak(prompt)
             try:
                 self.ui.update_task_workspace(
@@ -3490,7 +3550,7 @@ class BrahmaLive:
             self._email_step = 2
             
             prompt = "What is the message you'd like to send?"
-            self.ui.write_log(f"Brahma Evo: {prompt}")
+            self.ui.write_log(f"Sudarshana Chakra: {prompt}")
             self.speak(prompt)
             try:
                 self.ui.update_task_workspace(
@@ -3510,7 +3570,7 @@ class BrahmaLive:
             
             # Now let's execute composing!
             msg = f"Opening {self._email_app} and composing email to {self._email_recipient}..."
-            self.ui.write_log(f"Brahma Evo: {msg}")
+            self.ui.write_log(f"Sudarshana Chakra: {msg}")
             self.speak(msg)
             try:
                 self.ui.update_task_workspace(
@@ -3524,7 +3584,7 @@ class BrahmaLive:
             try:
                 import urllib.parse
                 import webbrowser
-                subject = "Message from Brahma Evo"
+                subject = "Message from Sudarshana Chakra"
                 quoted_recipient = urllib.parse.quote(self._email_recipient)
                 quoted_subject = urllib.parse.quote(subject)
                 quoted_body = urllib.parse.quote(self._email_message)
@@ -3539,7 +3599,7 @@ class BrahmaLive:
                 if "gmail" in app_lower or "chrome" in app_lower:
                     import urllib.parse
                     quoted_recipient = urllib.parse.quote(self._email_recipient)
-                    quoted_subject = urllib.parse.quote("Message from Brahma Evo")
+                    quoted_subject = urllib.parse.quote("Message from Sudarshana Chakra")
                     quoted_body = urllib.parse.quote(self._email_message)
                     url = f"https://mail.google.com/mail/?view=cm&fs=1&to={quoted_recipient}&su={quoted_subject}&body={quoted_body}"
                     
@@ -3584,7 +3644,7 @@ class BrahmaLive:
                 return self._prompt_message_reply(event)
             if self._attention_matches(lower, ("hear", "read", "what is it", "tell me", "show it", "open it")):
                 preview = read_event_preview(event)
-                self.ui.write_log(f"Brahma Evo: {preview}")
+                self.ui.write_log(f"Sudarshana Chakra: {preview}")
                 threading.Thread(target=speak_native, args=(preview,), daemon=True).start()
                 with self._attention_lock:
                     self._pending_attention = None
@@ -3634,7 +3694,7 @@ class BrahmaLive:
         if kind == "message":
             if decision == "hear":
                 preview = read_event_preview(event)
-                self.ui.write_log(f"Brahma Evo: {preview}")
+                self.ui.write_log(f"Sudarshana Chakra: {preview}")
                 threading.Thread(target=speak_native, args=(preview,), daemon=True).start()
             elif decision == "reply":
                 self._prompt_message_reply(event)
@@ -3691,7 +3751,7 @@ class BrahmaLive:
             try:
                 self.ui.update_task_workspace(
                     status="Thinking",
-                    output="Brahma Evo is drafting a direct reply.",
+                    output="Sudarshana Chakra is drafting a direct reply.",
                     percent=35,
                 )
             except Exception:
@@ -3707,6 +3767,7 @@ class BrahmaLive:
 
             is_cloud_gemini = configured_provider in ("Gemini", "Google Gemini")
             is_cloud_openrouter = configured_provider == "OpenRouter"
+            is_cloud_nvidia = str(configured_provider).lower() == "nvidia"
 
             # 1. If user explicitly selected Google Gemini, run Gemini FIRST
             if is_cloud_gemini and not is_offline_mode:
@@ -3717,9 +3778,9 @@ class BrahmaLive:
                         percent=50,
                     )
                     reply = _gemini_text_reply(request_text)
-                    print("[BRAHMA EVO] 🌐 Google Gemini answered successfully!")
+                    print("[SUDARSHANA CHAKRA] 🌐 Google Gemini answered successfully!")
                 except Exception as e_gem:
-                    print(f"[BRAHMA EVO] ⚠️ Gemini failed: {e_gem}")
+                    print(f"[SUDARSHANA CHAKRA] ⚠️ Gemini failed: {e_gem}")
                     if _is_gemini_limit_error(e_gem):
                         self._use_openrouter_first = True
 
@@ -3734,16 +3795,29 @@ class BrahmaLive:
                     reply = openrouter_client.chat(
                         request_text,
                         system=(
-                            "You are Brahma Evo, a concise, helpful desktop assistant. "
+                            "You are Sudarshana Chakra, a concise, helpful desktop assistant. "
                             "Reply naturally and briefly. Do not mention internal implementation details."
                         ),
                     )
-                    print("[BRAHMA EVO] 🌐 OpenRouter answered successfully!")
+                    print("[SUDARSHANA CHAKRA] 🌐 OpenRouter answered successfully!")
                 except Exception as e_or:
-                    print(f"[BRAHMA EVO] ⚠️ OpenRouter failed: {e_or}")
+                    print(f"[SUDARSHANA CHAKRA] ⚠️ OpenRouter failed: {e_or}")
+
+            # 1.5 If user explicitly selected NVIDIA, run NVIDIA FIRST
+            elif is_cloud_nvidia and not is_offline_mode:
+                try:
+                    self.ui.update_task_workspace(
+                        status="Thinking (NVIDIA)",
+                        output="Processing on NVIDIA NIM...",
+                        percent=50,
+                    )
+                    reply = _nvidia_text_reply(request_text)
+                    print("[SUDARSHANA CHAKRA] 🌐 NVIDIA NIM answered successfully!")
+                except Exception as e_nv:
+                    print(f"[SUDARSHANA CHAKRA] ⚠️ NVIDIA failed: {e_nv}")
 
             # 3. If user explicitly configured Local AI, is in Offline Mode, or cloud provider failed: run Local Brain
-            if not reply and (configured_provider == "Local" or is_offline_mode or not (is_cloud_gemini or is_cloud_openrouter)) and local_brain.is_available():
+            if not reply and (configured_provider == "Local" or is_offline_mode or not (is_cloud_gemini or is_cloud_openrouter or is_cloud_nvidia)) and local_brain.is_available():
                 try:
                     self.ui.update_task_workspace(
                         status="Thinking (Local AI)",
@@ -3757,7 +3831,7 @@ class BrahmaLive:
                     except Exception:
                         pass
                     if not prompt_txt:
-                        prompt_txt = "You are Brahma Evo, the autonomous desktop operating system."
+                        prompt_txt = "You are Sudarshana Chakra, the autonomous desktop operating system."
 
                     system_prompt = (
                         f"{prompt_txt}\n\n"
@@ -3795,7 +3869,7 @@ class BrahmaLive:
                             else:
                                 fn_args = fn_args_raw or {}
 
-                            print(f"[BRAHMA EVO] 🔒 Local Brain executing tool: {fn_name}({fn_args})")
+                            print(f"[SUDARSHANA CHAKRA] 🔒 Local Brain executing tool: {fn_name}({fn_args})")
                             self.ui.update_task_workspace(
                                 status=f"Executing {fn_name}",
                                 output=f"Running action: {fn_name} on local machine...",
@@ -3820,19 +3894,24 @@ class BrahmaLive:
                                 if followup_reply:
                                     reply = followup_reply
                             except Exception as e_fu:
-                                print(f"[BRAHMA EVO] ⚠️ Local Brain follow-up failed: {e_fu}")
+                                print(f"[SUDARSHANA CHAKRA] ⚠️ Local Brain follow-up failed: {e_fu}")
                                 reply = str(tool_result) if tool_result else f"{fn_name.replace('_', ' ').capitalize()} completed."
                     else:
                         reply = msg.get("content", "").strip()
-                    print(f"[BRAHMA EVO] 🔒 Local Brain ({local_model_target}) answered successfully!")
+                    print(f"[SUDARSHANA CHAKRA] 🔒 Local Brain ({local_model_target}) answered successfully!")
                 except Exception as e_loc:
-                    print(f"[BRAHMA EVO] ⚠️ Local Brain failed: {e_loc}")
+                    print(f"[SUDARSHANA CHAKRA] ⚠️ Local Brain failed: {e_loc}")
 
             # 4. Fallback cascading: if primary cloud choice failed, try secondary cloud choice
             if not reply and not is_offline_mode:
                 if is_cloud_gemini and self._use_openrouter_first:
                     try:
                         reply = openrouter_client.chat(request_text)
+                    except Exception:
+                        pass
+                elif is_cloud_nvidia:
+                    try:
+                        reply = _gemini_text_reply(request_text)
                     except Exception:
                         pass
                 elif is_cloud_openrouter:
@@ -3845,7 +3924,7 @@ class BrahmaLive:
             if not reply and local_brain.is_available():
                 try:
                     res = local_brain.chat_complete([
-                        {"role": "system", "content": "You are Brahma Evo, the autonomous desktop operating system. You control this PC. Never claim you cannot do automations."},
+                        {"role": "system", "content": "You are Sudarshana Chakra, the autonomous desktop operating system. You control this PC. Never claim you cannot do automations."},
                         {"role": "user", "content": request_text}
                     ], model=local_model_target, tools=TOOL_DECLARATIONS, focus_core=True)
                     msg_net = res.get("choices", [{}])[0].get("message", {})
@@ -3864,13 +3943,13 @@ class BrahmaLive:
                         reply = self._execute_tool_sync(fn_name, fn_args, call_id)
                     else:
                         reply = msg_net.get("content", "").strip()
-                    print(f"[BRAHMA EVO] 🔒 Local Brain offline safety net answered ({local_model_target})!")
+                    print(f"[SUDARSHANA CHAKRA] 🔒 Local Brain offline safety net answered ({local_model_target})!")
                 except Exception as e_net:
-                    print(f"[BRAHMA EVO] ⚠️ Offline Local Brain fallback failed: {e_net}")
+                    print(f"[SUDARSHANA CHAKRA] ⚠️ Offline Local Brain fallback failed: {e_net}")
             reply = (reply or "").strip()
             if not reply:
                 reply = "I’m ready, sir."
-            self.ui.write_log(f"Brahma Evo: {reply}")
+            self.ui.write_log(f"Sudarshana Chakra: {reply}")
             if not getattr(self.ui, "muted", False):
                 self.speak(reply, proactive=True)
             try:
@@ -3881,7 +3960,7 @@ class BrahmaLive:
                 self.ui.set_state("LISTENING")
         except Exception as e:
             msg = f"Fallback reply failed: {e}"
-            print(f"[BRAHMA EVO] ⚠️ {msg}")
+            print(f"[SUDARSHANA CHAKRA] ⚠️ {msg}")
             self.ui.write_log(f"ERR: {msg}")
             try:
                 self.ui.finish_task_workspace(msg, "Reply failed.", 100)
@@ -3941,16 +4020,19 @@ class BrahmaLive:
             async def _send():
                 try:
                     prompt = f"System Alert / Context: {text}\n\nPlease relay this information to me naturally now."
-                    await self.session.send(input=prompt, end_of_turn=True)
+                    await self.session.send_client_content(
+                        turns={"parts": [{"text": prompt}]},
+                        turn_complete=True,
+                    )
                 except Exception as e:
-                    print(f"[BRAHMA EVO] Unified Speak (Charon) err: {e}")
+                    print(f"[SUDARSHANA CHAKRA] Unified Speak (Charon) err: {e}")
                     def _fallback():
                         try:
                             self.set_speaking(True)
                             from actions.attention_monitor import _speak_edge_native
                             _speak_edge_native(text)
                         except Exception as exc:
-                            print(f"[Brahma Speak] Fallback TTS failed: {exc}")
+                            print(f"[Sudarshana Speak] Fallback TTS failed: {exc}")
                         finally:
                             self.set_speaking(False)
                     threading.Thread(target=_fallback, daemon=True).start()
@@ -3963,7 +4045,7 @@ class BrahmaLive:
                     from actions.attention_monitor import _speak_edge_native
                     _speak_edge_native(text)
                 except Exception as exc:
-                    print(f"[Brahma Speak] Unified TTS failed: {exc}")
+                    print(f"[Sudarshana Speak] Unified TTS failed: {exc}")
                 finally:
                     self.set_speaking(False)
             threading.Thread(target=_speak_thread, daemon=True).start()
@@ -4013,7 +4095,7 @@ class BrahmaLive:
             except Exception:
                 pass
             try:
-                self.ui.write_log(f"Brahma Evo: {announcement}")
+                self.ui.write_log(f"Sudarshana Chakra: {announcement}")
                 if execution_output:
                     self.ui.write_log(f"Result:\n{execution_output}")
             except Exception:
@@ -4074,7 +4156,7 @@ class BrahmaLive:
             parts.append(mem_str)
         parts.append(sys_prompt)
         parts.append(
-            "Wake-word mode: if the microphone is muted, still listen for the words 'Brahma Evo', 'hey', 'hi', and 'hello'. "
+            "Wake-word mode: if the microphone is muted, still listen for the words 'Sudarshana Chakra', 'hey', 'hi', and 'hello'. "
             "When you hear one of these activation cues, keep the session friendly and concise, "
             "and wait for the user's next command. "
             "IMPORTANT: Do NOT speak an unprompted generic greeting (like 'Thank you, how can I help you?') upon connecting. "
@@ -4112,11 +4194,11 @@ class BrahmaLive:
         name = fc.name
         args = dict(fc.args or {})
 
-        print(f"[BRAHMA EVO] 🔧 {name}  {args}")
+        print(f"[SUDARSHANA CHAKRA] 🔧 {name}  {args}")
         self.speak(f"Working on {name.replace('_', ' ')}...")
         self.ui.set_state("THINKING")
 
-        # Trigger Brahma Right Wing: Live Operations & Sources Telemetry
+        # Trigger Sudarshana Right Wing: Live Operations & Sources Telemetry
         tool_title = name.replace("_", " ").title()
         brief_query = (
             args.get("query")
@@ -4374,7 +4456,7 @@ class BrahmaLive:
                     if recipient:
                         if action == "take_over":
                             add_auto_thread(thread_id or recipient)
-                            result = f"Successfully took over the chat with @{recipient}. Brahma Evo will now automatically reply."
+                            result = f"Successfully took over the chat with @{recipient}. Sudarshana Chakra will now automatically reply."
                         else:
                             res = InstagramService.instance().send_dm(recipient, reply_text, open_in_browser=True)
                             result = f"Sent reply to @{recipient}: '{reply_text}'. Thread opened in browser."
@@ -4552,7 +4634,7 @@ class BrahmaLive:
                 location = args.get("location") or "current"
                 if action == "open":
                     globe.open_globe(location if args.get("location") else None)
-                    result = "Opened the interactive Brahma map."
+                    result = "Opened the interactive Sudarshana map."
                 elif action == "route":
                     r = await loop.run_in_executor(None, lambda: globe.show_route(args.get("origin", ""), args.get("destination", "")))
                     result = f"Flight route: {r.get('origin')} to {r.get('destination')}, {r.get('distance_km')} km, about {r.get('flight_time')}."
@@ -4597,8 +4679,8 @@ class BrahmaLive:
                     from core.confirm import request
                     result = request(
                         "start-call-screening",
-                        "Answer this call as Brahma Evo",
-                        f"Brahma will answer {event['title']} in {event['app']}, listen to the caller, and prepare a transcript and summary.",
+                        "Answer this call as Sudarshana Chakra",
+                        f"Sudarshana will answer {event['title']} in {event['app']}, listen to the caller, and prepare a transcript and summary.",
                         lambda: (start_call_proxy(event, ui=self.ui, speak_fn=self.speak) and "Call screening started.")
                     )
                     self.ui.set_state("LISTENING")
@@ -4614,7 +4696,7 @@ class BrahmaLive:
                 elif action == "forge":
                     goal = (args.get("goal") or "").strip()
                     if not goal:
-                        result = "Describe the capability you want Brahma to learn."
+                        result = "Describe the capability you want Sudarshana to learn."
                     else:
                         threading.Thread(
                             target=self._forge_skill,
@@ -4646,7 +4728,7 @@ class BrahmaLive:
                             out_text = str(run_res.get("summary") or run_res.get("output") or run_res.get("text") or run_res).strip()
                         else:
                             out_text = str(run_res).strip()
-                        self.ui.write_log(f"Brahma Evo [{skill_name}]:\n{out_text}")
+                        self.ui.write_log(f"Sudarshana Chakra [{skill_name}]:\n{out_text}")
                         result = out_text
                 else:
                     result = "Choose list or run."
@@ -4661,7 +4743,7 @@ class BrahmaLive:
                         out_text = str(run_res.get("summary") or run_res.get("output") or run_res.get("text") or run_res).strip()
                     else:
                         out_text = str(run_res).strip()
-                    self.ui.write_log(f"Brahma Evo [{name}]:\n{out_text}")
+                    self.ui.write_log(f"Sudarshana Chakra [{name}]:\n{out_text}")
                     result = out_text
                 else:
                     result = f"Unknown tool: {name}"
@@ -4740,7 +4822,7 @@ class BrahmaLive:
                 from actions.upload_video import upload_video
                 r = await loop.run_in_executor(None, lambda: upload_video(parameters=args, player=self.ui, speak=self.speak))
                 result = r or "Video publishing ready."
-            elif name == "shutdown_brahma":
+            elif name == "shutdown_sudarshana":
                 self.ui.write_log("SYS: Shutdown requested.")
                 self.speak("Goodbye, sir.")
 
@@ -4771,7 +4853,7 @@ class BrahmaLive:
         except Exception:
             pass
 
-        # Trigger Brahma Left Wing: Final Deliverables & Results
+        # Trigger Sudarshana Left Wing: Final Deliverables & Results
         try:
             import re
             file_match = re.search(r'([A-Za-z]:\\[^\s"\'<>`\r\n]+\.(?:pdf|docx|xlsx|pptx|png|jpg|mp4|py|html|json|txt))', str(result))
@@ -4803,7 +4885,7 @@ class BrahmaLive:
         tool_voice = self._connect_tool_voice(name, result)
         if tool_voice:
             try:
-                self.ui.write_log(f"Brahma Evo: {tool_voice}")
+                self.ui.write_log(f"Sudarshana Chakra: {tool_voice}")
             except Exception:
                 pass
             try:
@@ -4814,7 +4896,7 @@ class BrahmaLive:
         if not self.ui.muted:
             self.ui.set_state("LISTENING")
 
-        print(f"[BRAHMA EVO] 📤 {name} → {str(result)[:80]}")
+        print(f"[SUDARSHANA CHAKRA] 📤 {name} → {str(result)[:80]}")
 
         return types.FunctionResponse(
             id=fc.id, name=name,
@@ -4865,7 +4947,7 @@ class BrahmaLive:
             await self.session.send_realtime_input(media=msg)
 
     async def _listen_audio(self):
-        print("[BRAHMA EVO] 🎤 Mic started")
+        print("[SUDARSHANA CHAKRA] 🎤 Mic started")
         loop = asyncio.get_event_loop()
         import numpy as np
 
@@ -4889,7 +4971,7 @@ class BrahmaLive:
         def callback(indata, frames, time_info, status):
             nonlocal silence_chunks
             with self._speaking_lock:
-                brahma_speaking = self._is_speaking
+                sudarshana_speaking = self._is_speaking
             if self._phone_active:
                 return
 
@@ -4907,7 +4989,7 @@ class BrahmaLive:
                 # Handle Local AI voice input when in Local or Offline mode
                 app_cfg = config_manager.load_settings()
                 if app_cfg.get("default_ai_provider") == "Local" or app_cfg.get("offline_mode_enabled", False):
-                    if not brahma_speaking and not self.ui.muted:
+                    if not sudarshana_speaking and not self.ui.muted:
                         if lvl > 22.0:
                             speech_buffer.extend(indata.tobytes())
                             silence_chunks = 0
@@ -4932,7 +5014,7 @@ class BrahmaLive:
                                             pass
                                     threading.Thread(target=_process_local_speech, args=(captured,), daemon=True).start()
 
-                if brahma_speaking:
+                if sudarshana_speaking:
                     if self._echo.is_user_speech(indata, SEND_SAMPLE_RATE, lvl) and lvl > 28.0:
                         loop.call_soon_threadsafe(self.trigger_barge_in)
                         data = indata.tobytes()
@@ -4965,15 +5047,15 @@ class BrahmaLive:
                 device=_mic_dev,
                 callback=callback,
             ):
-                print(f"[BRAHMA EVO] 🎤 Mic stream open ({_mic_name or 'Default'})")
+                print(f"[SUDARSHANA CHAKRA] 🎤 Mic stream open ({_mic_name or 'Default'})")
                 while True:
                     await asyncio.sleep(0.1)
         except Exception as e:
-            print(f"[BRAHMA EVO] ❌ Mic: {e}")
+            print(f"[SUDARSHANA CHAKRA] ❌ Mic: {e}")
             raise
 
     async def _receive_audio(self):
-        print("[BRAHMA EVO] 👂 Recv started")
+        print("[SUDARSHANA CHAKRA] 👂 Recv started")
         out_buf, in_buf = [], []
 
         try:
@@ -5023,7 +5105,7 @@ class BrahmaLive:
 
                             full_out = " ".join(out_buf).strip()
                             if full_out:
-                                self.ui.write_log(f"Brahma Evo: {full_out}")
+                                self.ui.write_log(f"Sudarshana Chakra: {full_out}")
                             out_buf = []
 
                             if full_in and len(full_in) > 5:
@@ -5037,7 +5119,7 @@ class BrahmaLive:
                         self.ui.set_state("EXECUTING")
                         fn_responses = []
                         for fc in response.tool_call.function_calls:
-                            print(f"[BRAHMA EVO] 📞 {fc.name}")
+                            print(f"[SUDARSHANA CHAKRA] 📞 {fc.name}")
                             fr = await self._execute_tool(fc)
                             fn_responses.append(fr)
                         self.ui.set_state("THINKING")
@@ -5046,12 +5128,12 @@ class BrahmaLive:
                         )
 
         except Exception as e:
-            print(f"[BRAHMA EVO] ❌ Recv: {e}")
+            print(f"[SUDARSHANA CHAKRA] ❌ Recv: {e}")
             traceback.print_exc()
             raise
 
     async def _play_audio(self):
-        print("[BRAHMA EVO] 🔊 Play started")
+        print("[SUDARSHANA CHAKRA] 🔊 Play started")
         loop = asyncio.get_event_loop()
         import numpy as np
 
@@ -5078,7 +5160,7 @@ class BrahmaLive:
                     pass
                 await asyncio.to_thread(stream.write, chunk)
         except Exception as e:
-            print(f"[BRAHMA EVO] ❌ Play: {e}")
+            print(f"[SUDARSHANA CHAKRA] ❌ Play: {e}")
             raise
         finally:
             self.set_speaking(False)
@@ -5127,7 +5209,7 @@ class BrahmaLive:
 
         while True:
             try:
-                print("[BRAHMA EVO] 🔌 Connecting...")
+                print("[SUDARSHANA CHAKRA] 🔌 Connecting...")
                 self.ui.set_state("THINKING")
                 config = self._build_config()
 
@@ -5140,14 +5222,14 @@ class BrahmaLive:
                         self.audio_in_queue = asyncio.Queue()
                         self.out_queue      = asyncio.Queue()  # Fix: removed maxsize=10 to prevent dropping packets
                         
-                        print("[BRAHMA EVO] ✅ Connected.")
+                        print("[SUDARSHANA CHAKRA] ✅ Connected.")
                         try:
                             self.ui.boot_set_step_status("Connect AI backend", "done")
                             self.ui.boot_set_progress(75, "AI backend connected")
                         except Exception:
                             pass
                         self.ui.set_state("LISTENING")
-                        self.ui.write_log("SYS: Brahma Evo online.")
+                        self.ui.write_log("SYS: Sudarshana Chakra online.")
 
                         tg.create_task(self._send_realtime())
                         tg.create_task(self._listen_audio())
@@ -5180,7 +5262,7 @@ class BrahmaLive:
                         pass
                     
             except Exception as e:
-                print(f"[BRAHMA EVO] ⚠️ {e}")
+                print(f"[SUDARSHANA CHAKRA] ⚠️ {e}")
                 traceback.print_exc()
                 if _is_gemini_limit_error(e):
                     self._use_openrouter_first = True
@@ -5188,7 +5270,7 @@ class BrahmaLive:
                 self._loop = None
             self.set_speaking(False)
             self.ui.set_state("LISTENING")
-            print("[BRAHMA EVO] 🔄 Reconnecting in 5s...")
+            print("[SUDARSHANA CHAKRA] 🔄 Reconnecting in 5s...")
             await asyncio.sleep(5)
 
 def main():
@@ -5201,13 +5283,13 @@ def main():
     except Exception as exc:
         _startup_log(f"GitHub update skipped: {exc}")
     _ensure_desktop_shortcut()
-    ui = BrahmaUI(str(BASE_DIR / "assets" / "Brahma_Lite_Logo.png"), show_immediately=True)
+    ui = SudarshanaUI(str(BASE_DIR / "assets" / "Sudarshana_Lite_Logo.png"), show_immediately=True)
     dashboard = None
     dashboard_enabled = DashboardServer is not None and not _is_port_in_use(8000)
     if DashboardServer is not None and not dashboard_enabled:
         _startup_log("dashboard disabled: port 8000 already in use")
         try:
-            ui.write_log("SYS: Mobile Connect is already running in another Brahma Evo instance.")
+            ui.write_log("SYS: Mobile Connect is already running in another Sudarshana Chakra instance.")
         except Exception:
             pass
     if dashboard_enabled:
@@ -5228,53 +5310,53 @@ def main():
         threading.Thread(target=_start_dashboard_server, daemon=True).start()
         _startup_log("dashboard thread spawned")
 
-    brahma_connect = None
-    brahma_connect_enabled = False
-    if get_brahma_connect_service is not None:
+    sudarshana_connect = None
+    sudarshana_connect_enabled = False
+    if get_sudarshana_connect_service is not None:
         try:
-            brahma_connect = get_brahma_connect_service(BASE_DIR)
-            brahma_connect_enabled = bool(brahma_connect.gateway.config.enabled)
+            sudarshana_connect = get_sudarshana_connect_service(BASE_DIR)
+            sudarshana_connect_enabled = bool(sudarshana_connect.gateway.config.enabled)
         except Exception as exc:
-            _startup_log(f"brahma connect init failed: {exc}")
+            _startup_log(f"sudarshana connect init failed: {exc}")
             try:
-                ui.write_log(f"ERR: Brahma Connect failed to initialize: {exc}")
+                ui.write_log(f"ERR: Sudarshana Connect failed to initialize: {exc}")
             except Exception:
                 pass
-            brahma_connect = None
+            sudarshana_connect = None
     try:
-        if brahma_connect is not None and hasattr(ui, "set_brahma_connect_service"):
-            ui.set_brahma_connect_service(brahma_connect)
+        if sudarshana_connect is not None and hasattr(ui, "set_sudarshana_connect_service"):
+            ui.set_sudarshana_connect_service(sudarshana_connect)
     except Exception:
         pass
-    if brahma_connect is not None and brahma_connect_enabled:
-        connect_port = int(getattr(brahma_connect.gateway.config, "port", 8765))
+    if sudarshana_connect is not None and sudarshana_connect_enabled:
+        connect_port = int(getattr(sudarshana_connect.gateway.config, "port", 8765))
         if _is_port_in_use(connect_port):
-            _startup_log(f"brahma connect disabled: port {connect_port} already in use")
+            _startup_log(f"sudarshana connect disabled: port {connect_port} already in use")
             try:
-                ui.write_log(f"SYS: Brahma Connect is already running on port {connect_port}.")
+                ui.write_log(f"SYS: Sudarshana Connect is already running on port {connect_port}.")
             except Exception:
                 pass
         else:
-            def _start_brahma_connect_server():
+            def _start_sudarshana_connect_server():
                 try:
-                    _startup_log("brahma connect thread started")
-                    brahma_connect.start_background()
-                    _startup_log("brahma connect thread spawned")
+                    _startup_log("sudarshana connect thread started")
+                    sudarshana_connect.start_background()
+                    _startup_log("sudarshana connect thread spawned")
                 except Exception as exc:
-                    _startup_log(f"brahma connect thread error: {exc}")
+                    _startup_log(f"sudarshana connect thread error: {exc}")
                     try:
-                        ui.write_log(f"ERR: Brahma Connect server failed: {exc}")
+                        ui.write_log(f"ERR: Sudarshana Connect server failed: {exc}")
                     except Exception:
                         pass
 
-            threading.Thread(target=_start_brahma_connect_server, daemon=True).start()
+            threading.Thread(target=_start_sudarshana_connect_server, daemon=True).start()
 
 
 
     ui.show_main()
     _startup_log("ui shown")
 
-    # Start Brahma Passive Sensorium Engine (v2)
+    # Start Sudarshana Passive Sensorium Engine (v2)
     try:
         def _on_sensorium_alert(alert_type: str, meta: dict):
             msg = meta.get("message", "System state change detected.")
@@ -5310,7 +5392,7 @@ def main():
         _startup_log("runner waiting api key")
         ui.wait_for_api_key()
         _startup_log("runner api key ready")
-        brahma_evo = BrahmaLive(
+        sudarshana_evo = SudarshanaLive(
             ui,
             dashboard=dashboard,
             dashboard_started=dashboard is not None,
@@ -5322,18 +5404,18 @@ def main():
             spoken_text = meta.get("speech")
             if spoken_text and not getattr(ui, "muted", False):
                 try:
-                    brahma_evo.speak(spoken_text, proactive=True)
+                    sudarshana_evo.speak(spoken_text, proactive=True)
                 except Exception as exc:
                     print(f"[Sensorium Speak Error]: {exc}")
 
         sensorium.register_interjection_handler(_proactive_sensorium_voice)
         try:
             if plugin_manager is not None:
-                brahma_evo.plugin_manager = plugin_manager
-                plugin_manager.register_brahma(brahma_evo)
+                sudarshana_evo.plugin_manager = plugin_manager
+                plugin_manager.register_sudarshana(sudarshana_evo)
                 # allow plugins to run a startup hook
                 try:
-                    plugin_manager.dispatch("on_startup", brahma_evo)
+                    plugin_manager.dispatch("on_startup", sudarshana_evo)
                 except Exception:
                     pass
         except Exception:
@@ -5351,8 +5433,8 @@ def main():
                 if is_auto:
                     return _ig_gemini_reply(username, text)
                 else:
-                    brahma_evo._ig_reply_mode = True
-                    brahma_evo._ig_pending_thread = {
+                    sudarshana_evo._ig_reply_mode = True
+                    sudarshana_evo._ig_pending_thread = {
                         "thread_id": thread_id,
                         "username": username,
                         "message": text
@@ -5361,8 +5443,8 @@ def main():
                     snippet = f": '{clean_text[:75]}...'" if len(clean_text) > 75 else (f": '{clean_text}'" if clean_text else "")
                     msg = f"You received a new Instagram message from {username}{snippet}. What should I reply, or should I take over the chat?"
                     ui.write_log(f"📱 Insta (@{username}): {clean_text or '[Media/Attachment]'}")
-                    ui.write_log(f"Brahma Evo: {msg}")
-                    brahma_evo.speak(msg)
+                    ui.write_log(f"Sudarshana Chakra: {msg}")
+                    sudarshana_evo.speak(msg)
                     return None
                 
             set_ig_prompt_callback(_ig_handler)
@@ -5382,14 +5464,14 @@ def main():
                     subj_preview = f"'{clean_subj[:70]}...'" if len(clean_subj) > 70 else f"'{clean_subj}'"
                     msg = f"You received a new email from {sender} with subject: {subj_preview}."
                     ui.write_log(f"📧 Email ({sender}): {clean_subj}")
-                    ui.write_log(f"Brahma Evo: {msg}")
-                    brahma_evo.speak(msg)
+                    ui.write_log(f"Sudarshana Chakra: {msg}")
+                    sudarshana_evo.speak(msg)
 
                 set_email_prompt_callback(_email_handler)
                 start_email_daemon(poll_interval=25)
-                print("[Brahma Evo] Background email watcher started.")
+                print("[Sudarshana Chakra] Background email watcher started.")
         except Exception as e:
-            print(f"[Brahma Evo] Email daemon initialization notice: {e}")
+            print(f"[Sudarshana Chakra] Email daemon initialization notice: {e}")
 
         def _clipboard_monitor():
             try:
@@ -5406,15 +5488,15 @@ def main():
                         text = (curr_clip or "").strip()
                         if text and len(text) > 3:
                             reply = _clipboard_gemini_reply(text[:1000])
-                            ui.write_log(f"Brahma Evo (Clipboard): {reply}")
-                            brahma_evo.speak(reply)
+                            ui.write_log(f"Sudarshana Chakra (Clipboard): {reply}")
+                            sudarshana_evo.speak(reply)
                 except Exception:
                     pass
 
         threading.Thread(target=_clipboard_monitor, daemon=True, name="clipboard-monitor").start()
 
         try:
-            asyncio.run(brahma_evo.run())
+            asyncio.run(sudarshana_evo.run())
         except KeyboardInterrupt:
             print("\n🔴 Shutting down...")
 

@@ -42,7 +42,7 @@ def _geocode_location(area_name: str):
 
     try:
         url = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote(clean_area)}&count=1"
-        req = urllib.request.Request(url, headers={'User-Agent': 'BrahmaAI-FlightRadar/1.0'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'SudarshanaAI-FlightRadar/1.0'})
         with urllib.request.urlopen(req, timeout=5) as r:
             data = json.loads(r.read().decode('utf-8'))
             results = data.get('results', [])
@@ -70,7 +70,7 @@ def execute(**kwargs):
            f"lamin={min_latitude}&lomin={min_longitude}&"
            f"lamax={max_latitude}&lomax={max_longitude}")
 
-    headers = {'User-Agent': 'BrahmaAI-Skill/1.0'}
+    headers = {'User-Agent': 'SudarshanaAI-Skill/1.0'}
     flights = []
     try:
         req = urllib.request.Request(url, headers=headers)
@@ -123,7 +123,7 @@ def execute(**kwargs):
         ax.grid(True, linestyle='--', alpha=0.3, color='#1E293B')
         ax.legend(facecolor='#0F172A', edgecolor='#334155', loc='upper right')
 
-        deliverables_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'BrahmaAI', 'deliverables')
+        deliverables_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'SudarshanaAI', 'deliverables')
         os.makedirs(deliverables_dir, exist_ok=True)
         image_path = os.path.join(deliverables_dir, 'flights_radar_output.png')
         plt.savefig(image_path, bbox_inches='tight', dpi=140)

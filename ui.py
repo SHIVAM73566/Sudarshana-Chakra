@@ -57,7 +57,7 @@ except Exception:
 from discord_bot import DiscordBotService
 from gesture_utils import estimate_gesture_state, GestureTracker
 from smart_home import SmartHomeService
-from smart_home_page_new import BrahmaHomePage, _DeviceTile
+from smart_home_page_new import SudarshanaHomePage, _DeviceTile
 from core.local_brain import local_brain
 from workspace_store import store as workspace_store
 from core.identity import identity
@@ -73,8 +73,8 @@ CONFIG_DIR = get_user_data_dir() / "config"
 API_FILE   = CONFIG_DIR / "api_keys.json"
 APP_SETTINGS_FILE = CONFIG_DIR / "app_settings.json"
 DISCORD_SETTINGS_FILE = CONFIG_DIR / "discord_bot.json"
-LOGO_FILE  = BASE_DIR / "assets" / "Brahma_Lite_Logo.png"
-LOGO_ICO   = BASE_DIR / "assets" / "Brahma_Lite_Logo.ico"
+LOGO_FILE  = BASE_DIR / "assets" / "Sudarshana_Lite_Logo.png"
+LOGO_ICO   = BASE_DIR / "assets" / "Sudarshana_Lite_Logo.ico"
 BACKGROUND_IMAGE_FILE = BASE_DIR / "assets" / "background.png"
 MODEL_DOWNLOAD_URL = "https://storage.googleapis.com/mediapipe-assets/hand_landmarker.task"
 
@@ -220,6 +220,9 @@ class BackgroundWidget(QWidget):
             except Exception:
                 self._fallback_pixmap = None
         self._web_view = None
+        self._avatar_name = "Guardian Avatar"
+        self._voice_locked = False
+        self._voice_denied = False
 
         if WEB_ENGINE_AVAILABLE:
             self._init_web_engine()
@@ -266,6 +269,7 @@ class BackgroundWidget(QWidget):
                 self._web_view.lower()
             st = getattr(self, "_last_state", "IDLE") or "IDLE"
             self._do_set_ai_state(st)
+            self._push_avatar_portal()
         elif not ok:
             print("[BackgroundWidget] Background WebEngine failed to load, retrying in 250ms...")
             html_path = BASE_DIR / "assets" / "web_background" / "index.html"
@@ -318,7 +322,7 @@ class BackgroundWidget(QWidget):
                 st = (state or "IDLE").strip().replace("'", "\\'")
                 page = self._web_view.page()
                 if page:
-                    page.runJavaScript(f"if(window.setBrahmaState) window.setBrahmaState('{st}');")
+                    page.runJavaScript(f"if(window.setSudarshanaState) window.setSudarshanaState('{st}');")
             except Exception:
                 pass
 
@@ -350,6 +354,32 @@ class BackgroundWidget(QWidget):
                     page.runJavaScript(f"if(window.setPointerNorm) window.setPointerNorm({nx:.4f}, {ny:.4f});")
             except Exception:
                 pass
+
+    def set_avatar_name(self, name: str) -> None:
+        self._avatar_name = str(name or "Guardian Avatar").strip()[:40] or "Guardian Avatar"
+        self._push_avatar_portal()
+
+    def set_voice_lock_state(self, locked: bool, denied: bool = False) -> None:
+        self._voice_locked = bool(locked)
+        self._voice_denied = bool(denied)
+        self._push_avatar_portal()
+
+    def _push_avatar_portal(self) -> None:
+        if not self._web_view:
+            return
+        try:
+            page = self._web_view.page()
+            if not page:
+                return
+            import json as _json
+            payload = _json.dumps({
+                "name": getattr(self, "_avatar_name", "Guardian Avatar") or "Guardian Avatar",
+                "locked": bool(getattr(self, "_voice_locked", False)),
+                "denied": bool(getattr(self, "_voice_denied", False)),
+            })
+            page.runJavaScript(f"if(window.updateAvatarPortal) window.updateAvatarPortal({payload});")
+        except Exception:
+            pass
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -436,7 +466,7 @@ class RemoteKeyOverlay(QWidget):
         title.setStyleSheet("color: #ffffff; background: transparent; border: none;")
         lay.addWidget(title)
 
-        subtitle = QLabel("Scan the QR code with your phone to remotely control Brahma Evo.")
+        subtitle = QLabel("Scan the QR code with your phone to remotely control Sudarshana Chakra.")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setWordWrap(True)
         subtitle.setFont(QFont("Segoe UI", 9))
@@ -592,7 +622,7 @@ class RemoteKeyOverlay(QWidget):
         self._qr_label.setText("OK")
         self._qr_label.setFont(QFont("Segoe UI", 34, QFont.Weight.Black))
         self._qr_label.setStyleSheet("color: #37ff5f; background: #041006; border-radius: 12px;")
-        self._timer_lbl.setText("Phone connected. Brahma Evo remote is ready.")
+        self._timer_lbl.setText("Phone connected. Sudarshana Chakra remote is ready.")
 
     def _refresh_key(self):
         if not self._on_new_key:
@@ -685,7 +715,7 @@ class DailyBriefingOverlay(QWidget):
         hdr_info = QVBoxLayout()
         hdr_info.setSpacing(2)
 
-        title_lbl = QLabel("⚡ BRAHMA INTELLIGENCE // UNIFIED MORNING BRIEFING")
+        title_lbl = QLabel("⚡ SUDARSHANA INTELLIGENCE // UNIFIED MORNING BRIEFING")
         title_lbl.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         title_lbl.setStyleSheet(f"color: {C.PRI}; letter-spacing: 1.5px; background: transparent; border: none;")
         hdr_info.addWidget(title_lbl)
@@ -1168,7 +1198,7 @@ class MemoryInspectorOverlay(QWidget):
 
         from memory.memory_manager import all_entries_for_ui
 
-        hdr = QLabel("🧠  WHAT BRAHMA REMEMBERS")
+        hdr = QLabel("🧠  WHAT SUDARSHANA REMEMBERS")
         hdr.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.PRI}; background: transparent; letter-spacing: 0.5px;")
         self._lay.addWidget(hdr)
@@ -1184,7 +1214,7 @@ class MemoryInspectorOverlay(QWidget):
 
         cap = QLabel(
             f"{len(rows)} stored memory entries. Stored locally in memory/long_term.json. "
-            f"Brahma recalls these during relevant conversations."
+            f"Sudarshana recalls these during relevant conversations."
         )
         cap.setWordWrap(True)
         cap.setFont(QFont("Segoe UI", 8))
@@ -2412,6 +2442,16 @@ class MessageCard(QFrame):
             f"background: {bg}; color: {fg}; border: 1px solid {border}; border-radius: 17px;"
         )
 
+        # Locked companion portrait for the System/AI agent identity.
+        if role in ("assistant", "system"):
+            try:
+                from core.avatar import get_avatar_pixmap, AVATAR_LABEL
+                avatar.setStyleSheet("background: transparent; border: none;")
+                avatar.setPixmap(get_avatar_pixmap(34))
+                avatar.setToolTip(AVATAR_LABEL)
+            except Exception:
+                pass
+
         body = QVBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(3)
@@ -2496,7 +2536,7 @@ class TaskCard(QFrame):
         self._command_lbl.setStyleSheet(f"color: {C.WHITE}; background: transparent;")
         lay.addWidget(self._command_lbl)
 
-        self._plan_lbl = QLabel("Plan: Brahma Evo will generate a task plan after you send a command.")
+        self._plan_lbl = QLabel("Plan: Sudarshana Chakra will generate a task plan after you send a command.")
         self._plan_lbl.setWordWrap(True)
         self._plan_lbl.setFont(QFont("Segoe UI", 9))
         self._plan_lbl.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
@@ -2548,7 +2588,7 @@ class TaskCard(QFrame):
         self._title.setText(title)
         self._status_lbl.setText(desc)
         self._output_lbl.setText(desc)
-        self._plan_lbl.setText("Plan: Brahma Evo will generate a task plan after you send a command.")
+        self._plan_lbl.setText("Plan: Sudarshana Chakra will generate a task plan after you send a command.")
         self._command_lbl.setText("Command: waiting for input")
         self._pct.setText(f"{percent}%")
         self._bar.setValue(max(0, min(100, percent)))
@@ -2617,7 +2657,7 @@ class TaskCard(QFrame):
         self._workspace_locked = False
         self._title.setText("Ready")
         self._command_lbl.setText("Command: waiting for input")
-        self._plan_lbl.setText("Plan: Brahma Evo will generate a task plan after you send a command.")
+        self._plan_lbl.setText("Plan: Sudarshana Chakra will generate a task plan after you send a command.")
         self._status_lbl.setText("Status: Idle")
         self._output_lbl.setText("Output: Ready to work.")
         self._pct.setText("0%")
@@ -2865,9 +2905,15 @@ class ChatBubble(QFrame):
         head.setSpacing(8)
 
         if role == "assistant":
-            avatar = _framed_logo(24, 24, bg="rgba(12,14,20,245)", border="rgba(0, 229, 255,0.50)", radius=12, inset=4)
+            avatar = QLabel()
+            try:
+                from core.avatar import get_avatar_pixmap, AVATAR_LABEL
+                avatar.setPixmap(get_avatar_pixmap(24))
+                avatar.setToolTip(AVATAR_LABEL)
+            except Exception:
+                avatar = _framed_logo(24, 24, bg="rgba(12,14,20,245)", border="rgba(0, 229, 255,0.50)", radius=12, inset=4)
             head.addWidget(avatar)
-            name_lbl = QLabel(name or "Brahma Evo")
+            name_lbl = QLabel(name or "Sudarshana Chakra")
             name_lbl.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
             name_lbl.setStyleSheet("color: #ffffff; background: transparent;")
             head.addWidget(name_lbl)
@@ -3055,7 +3101,7 @@ class ConversationFeed(QScrollArea):
         lay = QVBoxLayout(frame)
         lay.setContentsMargins(14, 12, 14, 12)
         lay.setSpacing(10)
-        title = QLabel("Try asking Brahma Evo")
+        title = QLabel("Try asking Sudarshana Chakra")
         title.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
         title.setStyleSheet("color: #ffffff; background: transparent;")
         subtitle = QLabel("Create a presentation, analyze a screen, build a website, organize files, or run browser automation.")
@@ -3168,10 +3214,10 @@ class ConversationFeed(QScrollArea):
             attachments = msg.get("attachments") or []
             name = {
                 "user": "You",
-                "assistant": "Brahma Evo",
+                "assistant": "Sudarshana Chakra",
                 "system": "System",
                 "file": "Files",
-            }.get(role, "Brahma Evo")
+            }.get(role, "Sudarshana Chakra")
             self.add_message(role, name, content, stamp, attachments=attachments, animate=False)
         self._sync_empty_state()
         QTimer.singleShot(0, self.scroll_to_bottom)
@@ -3364,7 +3410,7 @@ class WorkspaceSidebar(QWidget):
 
         header = QHBoxLayout()
         header.setSpacing(10)
-        self._title = QLabel("BRAHMA EVO WORKSPACE")
+        self._title = QLabel("SUDARSHANA CHAKRA WORKSPACE")
         self._title.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         self._title.setStyleSheet("color: #FFFFFF; background: transparent; letter-spacing: 1px;")
         header.addWidget(self._title)
@@ -3527,7 +3573,7 @@ class WorkspaceSidebar(QWidget):
         input_row.addWidget(self._attach_btn)
 
         self._input = QLineEdit()
-        self._input.setPlaceholderText("Message Brahma Evo...")
+        self._input.setPlaceholderText("Message Sudarshana Chakra...")
         self._input.setFont(QFont("Segoe UI", 10))
         self._input.setStyleSheet(
             f"QLineEdit {{ background: transparent; color: {C.WHITE}; border: none; padding: 2px 4px; selection-background-color: rgba(0, 229, 255, 0.25); }}"
@@ -3860,7 +3906,7 @@ class WorkspaceSidebar(QWidget):
         if not raw:
             return
         low = raw.lower()
-        if low.startswith(("you:", "brahma evo:")):
+        if low.startswith(("you:", "sudarshana chakra:")):
             return
         if low.startswith("sys:"):
             self.record_chat_event({"role": "system", "text": raw.split(":", 1)[1].strip(), "source": "local"})
@@ -3883,7 +3929,7 @@ class WorkspaceSidebar(QWidget):
         elif role == "assistant":
             convo_id = self._store.record_chat("assistant", text, conversation_id=convo_id, attachments=attachments)
             self._active_conversation_id = convo_id
-            self._feed.add_message("assistant", "Brahma Evo", text, _fmt_time_stamp(stamp), attachments=attachments, animate=True)
+            self._feed.add_message("assistant", "Sudarshana Chakra", text, _fmt_time_stamp(stamp), attachments=attachments, animate=True)
             self._hide_memory_banner()
         elif role == "system":
             convo_id = self._store.record_chat("system", text, conversation_id=convo_id, attachments=attachments)
@@ -4113,7 +4159,7 @@ class InlineChatWorkspace(QFrame):
         input_row.addWidget(self._attach_btn)
 
         self._input = QLineEdit()
-        self._input.setPlaceholderText("Message Brahma Evo...")
+        self._input.setPlaceholderText("Message Sudarshana Chakra...")
         self._input.setFont(QFont("Segoe UI", 10))
         self._input.setStyleSheet(
             f"QLineEdit {{ background: transparent; color: {C.WHITE}; border: none; padding: 0 4px; selection-background-color: rgba(0, 229, 255, 0.25); }}"
@@ -4147,7 +4193,7 @@ class InlineChatWorkspace(QFrame):
 
         footer = QHBoxLayout()
         footer.setContentsMargins(4, 2, 4, 2)
-        self._footer_status = QLabel("Brahma Evo is ready")
+        self._footer_status = QLabel("Sudarshana Chakra is ready")
         self._footer_status.setFont(QFont("Segoe UI", 8))
         self._footer_status.setStyleSheet("color: rgba(255, 255, 255, 0.55); background: transparent;")
         footer.addWidget(self._footer_status)
@@ -4164,12 +4210,12 @@ class InlineChatWorkspace(QFrame):
         if hasattr(self, "_footer_status") and self._footer_status:
             status_text = {
                 "listening": "Listening to your voice...",
-                "speaking": "Brahma Evo is speaking...",
+                "speaking": "Sudarshana Chakra is speaking...",
                 "thinking": "Synthesizing response...",
                 "executing": "Executing task...",
                 "working": "Processing request...",
                 "muted": "Microphone muted",
-            }.get((state or "").lower(), "Brahma Evo is ready")
+            }.get((state or "").lower(), "Sudarshana Chakra is ready")
             self._footer_status.setText(status_text)
 
     def _build_history_tab(self) -> QWidget:
@@ -4294,7 +4340,7 @@ class InlineChatWorkspace(QFrame):
             self._show_memories(self._store.search_memories(text))
         elif role == "assistant":
             self._store.record_chat("assistant", text, conversation_id=convo_id, attachments=attachments)
-            self._feed.add_message("assistant", "Brahma Evo", text, stamp, attachments=attachments)
+            self._feed.add_message("assistant", "Sudarshana Chakra", text, stamp, attachments=attachments)
             self._hide_memories()
         elif role == "system":
             self._store.record_chat("system", text, conversation_id=convo_id, attachments=attachments)
@@ -4311,7 +4357,7 @@ class InlineChatWorkspace(QFrame):
         low = raw.lower()
         if low.startswith("you:"):
             self.record_chat_event({"role": "user", "text": raw.split(":", 1)[1].strip()})
-        elif low.startswith("brahma evo:"):
+        elif low.startswith("sudarshana chakra:"):
             self.record_chat_event({"role": "assistant", "text": raw.split(":", 1)[1].strip()})
         elif low.startswith("sys:"):
             self.record_chat_event({"role": "system", "text": raw.split(":", 1)[1].strip()})
@@ -4422,7 +4468,7 @@ class LauncherControlPanel(QDialog):
         lay.setContentsMargins(18, 16, 18, 16)
         lay.setSpacing(10)
 
-        title = QLabel("BRAHMA EVO CONTROL")
+        title = QLabel("SUDARSHANA CHAKRA CONTROL")
         title.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
         title.setStyleSheet("color: #FFFFFF; background: transparent; letter-spacing: 1px;")
         lay.addWidget(title)
@@ -4464,8 +4510,8 @@ class LauncherControlPanel(QDialog):
         self._startup_btn = mk_btn("Show Workspace On Startup", checkable=True, checked=bool(startup_workspace))
         self._show_icon_btn = mk_btn("Show Floating Icon")
         self._hide_icon_btn = mk_btn("Hide Floating Icon")
-        self._restart_btn = mk_btn("Restart Brahma Evo")
-        self._quit_btn = mk_btn("Quit Brahma Evo")
+        self._restart_btn = mk_btn("Restart Sudarshana Chakra")
+        self._quit_btn = mk_btn("Quit Sudarshana Chakra")
         self._open_app_btn = mk_btn("Open App")
         self._open_dev_btn = mk_btn("Open Developer Mode")
 
@@ -4508,7 +4554,7 @@ class LauncherControlPanel(QDialog):
         flay = QVBoxLayout(frame)
         flay.setContentsMargins(18, 16, 18, 16)
         flay.setSpacing(10)
-        lbl = QLabel("Hide Brahma Evo icon?")
+        lbl = QLabel("Hide Sudarshana Chakra icon?")
         lbl.setStyleSheet("color: #FFFFFF; background: transparent; font: 700 11pt 'Segoe UI';")
         sub = QLabel("You can restore it from the system tray.")
         sub.setStyleSheet("color: rgba(255,255,255,0.65); background: transparent;")
@@ -4566,15 +4612,15 @@ class SmallPanelCard(QFrame):
         self._body_lbl.setStyleSheet(f"color: {accent}; background: transparent;")
         lay.addWidget(self._body_lbl)
 
-class BrahmaTelemetryWing(QFrame):
+class SudarshanaTelemetryWing(QFrame):
     """
-    Brahma Right Wing: Live Operations, Research Streams, and Sources.
+    Sudarshana Right Wing: Live Operations, Research Streams, and Sources.
     Auto-dismisses in 10 seconds unless pinned or hovered.
     Adapts dynamically to the active theme color (Amber Gold by default).
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("BrahmaTelemetryWing")
+        self.setObjectName("SudarshanaTelemetryWing")
         self.setFixedWidth(310)
         self.setMinimumHeight(320)
         self.setMaximumHeight(520)
@@ -4702,7 +4748,7 @@ class BrahmaTelemetryWing(QFrame):
         self._theme_rgb = (r, g, b)
 
         self.setStyleSheet(f"""
-            QFrame#BrahmaTelemetryWing {{
+            QFrame#SudarshanaTelemetryWing {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 rgba(10, 15, 24, 238),
                     stop:0.6 rgba(6, 10, 18, 222),
@@ -4879,16 +4925,16 @@ class BrahmaTelemetryWing(QFrame):
         self._anim.start()
 
 
-class BrahmaResultWing(QFrame):
+class SudarshanaResultWing(QFrame):
     """
-    Brahma Left Wing: Final Results, Generated Deliverables (PDF/Word/Media/Code),
+    Sudarshana Left Wing: Final Results, Generated Deliverables (PDF/Word/Media/Code),
     Executive Summary Bullets, and Quick Action Buttons.
     Auto-dismisses in 10 seconds unless pinned or hovered.
     Adapts dynamically to the active theme color (Amber Gold by default).
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("BrahmaResultWing")
+        self.setObjectName("SudarshanaResultWing")
         self.setFixedWidth(310)
         self.setMinimumHeight(320)
         self.setMaximumHeight(540)
@@ -5040,7 +5086,7 @@ class BrahmaResultWing(QFrame):
         self._theme_rgb = (r, g, b)
 
         self.setStyleSheet(f"""
-            QFrame#BrahmaResultWing {{
+            QFrame#SudarshanaResultWing {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 rgba(14, 18, 26, 240),
                     stop:0.6 rgba(9, 13, 20, 225),
@@ -5236,7 +5282,7 @@ class BrahmaResultWing(QFrame):
                         import subprocess
                         subprocess.Popen(["xdg-open", str(p)])
                 except Exception as e:
-                    print(f"[BrahmaResultWing] Open file error: {e}")
+                    print(f"[SudarshanaResultWing] Open file error: {e}")
 
     def _on_reveal_clicked(self):
         if self._active_file_path:
@@ -5251,7 +5297,7 @@ class BrahmaResultWing(QFrame):
                 else:
                     subprocess.Popen(["xdg-open", str(p.parent)])
             except Exception as e:
-                print(f"[BrahmaResultWing] Reveal error: {e}")
+                print(f"[SudarshanaResultWing] Reveal error: {e}")
 
     def set_body(self, text: str):
         if hasattr(self, "_summary_lbl") and text:
@@ -5382,10 +5428,10 @@ class LogWidget(QScrollArea):
         tl = raw.lower()
         if tl.startswith("you:"):
             return "user", "You", raw[4:].strip()
-        if tl.startswith("brahma evo:"):
-            return "assistant", "Brahma Evo", raw[len("Brahma Evo:"):].strip()
-        if tl.startswith("brahma evo:"):
-            return "assistant", "Brahma Evo", raw[len("Brahma Evo:"):].strip()
+        if tl.startswith("sudarshana chakra:"):
+            return "assistant", "Sudarshana Chakra", raw[len("Sudarshana Chakra:"):].strip()
+        if tl.startswith("sudarshana chakra:"):
+            return "assistant", "Sudarshana Chakra", raw[len("Sudarshana Chakra:"):].strip()
         if tl.startswith("file:"):
             return "file", "File", raw[5:].strip()
         if tl.startswith("err:"):
@@ -5490,7 +5536,7 @@ class FileDropZone(QWidget):
 
     def _browse(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Select a file for Brahma Evo", str(Path.home()),
+            self, "Select a file for Sudarshana Chakra", str(Path.home()),
             "All Files (*.*);;"
             "Images (*.jpg *.jpeg *.png *.gif *.webp *.bmp *.svg);;"
             "Documents (*.pdf *.docx *.txt *.md *.pptx);;"
@@ -5613,7 +5659,7 @@ class _DropCanvas(QWidget):
 
 
 class SetupOverlay(QWidget):
-    done = pyqtSignal(str, str, str)
+    done = pyqtSignal(str, str, str, str)
 
     def __init__(self, parent=None, defaults: dict | None = None):
         super().__init__(parent)
@@ -5621,6 +5667,7 @@ class SetupOverlay(QWidget):
         self.setStyleSheet("background: transparent;")
 
         self._defaults = defaults or {}
+        self._setup_provider = "gemini"
         self._detected = {"darwin": "mac", "windows": "windows"}.get(_OS.lower(), "linux")
         self._sel_os = self._defaults.get("os_system", self._detected)
 
@@ -5787,6 +5834,8 @@ class SetupOverlay(QWidget):
         lbl_app = QLabel("Application Name")
         lbl_app.setStyleSheet("color: #ffaa30;")
         self._inp_app = QLineEdit(identity.get_application_name())
+        self._inp_app.setReadOnly(True)
+        self._inp_app.setToolTip("Brand name is immutable.")
         self._inp_app.setStyleSheet("background: rgba(255,255,255,0.1); color: #fff; padding: 6px; border-radius: 4px;")
         form_lay.addWidget(lbl_app, 1, 0)
         form_lay.addWidget(self._inp_app, 1, 1)
@@ -5806,8 +5855,8 @@ class SetupOverlay(QWidget):
         self._stack.addWidget(page)
 
     def _save_identity_and_next(self):
-        identity.set_assistant_name(self._inp_ast.text().strip() or "Brahma")
-        identity.set_application_name(self._inp_app.text().strip() or "Brahma Evo")
+        identity.set_assistant_name(self._inp_ast.text().strip() or "Sudarshana")
+        identity.set_application_name(self._inp_app.text().strip() or "Sudarshana Chakra")
         self._stack.setCurrentIndex(2)
 
     # ── STAGE 1.2: Owner Profile ────────────────────────────────
@@ -6023,7 +6072,7 @@ class SetupOverlay(QWidget):
         gem_btn.setGeometry(0, 0, 260, 160)
         gem_btn.setStyleSheet("background: transparent; border: none;")
         gem_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        gem_btn.clicked.connect(self._goto_stage3)
+        gem_btn.clicked.connect(lambda: self._goto_stage3("gemini"))
 
         cards_lay.addWidget(gem_card)
 
@@ -6069,14 +6118,84 @@ class SetupOverlay(QWidget):
         olay.addWidget(oc)
 
         cards_lay.addWidget(or_card)
+
+        # ── NVIDIA NIM Card ──
+        nv_card = QFrame()
+        nv_card.setFixedSize(260, 160)
+        nv_card.setStyleSheet("""
+            QFrame {
+                background: rgba(118, 185, 0, 0.05);
+                border: 1px solid rgba(118, 185, 0, 0.25);
+                border-radius: 16px;
+            }
+            QFrame:hover {
+                background: rgba(118, 185, 0, 0.12);
+                border: 1px solid rgba(118, 185, 0, 0.5);
+            }
+        """)
+        nv_card.setCursor(Qt.CursorShape.PointingHandCursor)
+        nlay = QVBoxLayout(nv_card)
+        nlay.setContentsMargins(22, 18, 22, 18)
+        nlay.setSpacing(4)
+
+        nt = QLabel("NVIDIA NIM")
+        nt.setFont(QFont("Segoe UI", 15, QFont.Weight.Bold))
+        nt.setStyleSheet("color: #76b900; background: transparent; border: none;")
+        nlay.addWidget(nt)
+
+        ns = QLabel("★★★★  Accelerated")
+        ns.setFont(QFont("Segoe UI", 9))
+        ns.setStyleSheet("color: rgba(118, 185, 0, 0.7); background: transparent; border: none;")
+        nlay.addWidget(ns)
+
+        nd = QLabel("Primary Intelligence")
+        nd.setFont(QFont("Segoe UI", 9))
+        nd.setStyleSheet("color: rgba(255,255,255,0.35); background: transparent; border: none;")
+        nlay.addWidget(nd)
+
+        nlay.addStretch()
+
+        nc = QLabel("Connect →")
+        nc.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+        nc.setStyleSheet("color: #76b900; background: transparent; border: none;")
+        nlay.addWidget(nc)
+
+        nv_btn = QPushButton(nv_card)
+        nv_btn.setGeometry(0, 0, 260, 160)
+        nv_btn.setStyleSheet("background: transparent; border: none;")
+        nv_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        nv_btn.clicked.connect(lambda: self._goto_stage3("nvidia"))
+
+        cards_lay.addWidget(nv_card)
         cards_lay.addStretch()
 
         lay.addLayout(cards_lay)
         lay.addStretch(1)
         self._stack.addWidget(page)
 
-    def _goto_stage3(self):
+    def _goto_stage3(self, provider="gemini"):
         self._call_js("if(window.triggerPulse) window.triggerPulse();")
+        self._setup_provider = provider
+        if hasattr(self, "_authenticating"):
+            self._authenticating = None
+        if provider == "nvidia":
+            self._s3_title.setText("NVIDIA NIM")
+            self._s3_title.setStyleSheet("color: #76b900; background: transparent; border: none;")
+            self._s3_sub.setText("Paste your NVIDIA API Key")
+            self._s3_sub.setStyleSheet("color: rgba(255,255,255,0.4); background: transparent; border: none;")
+            self._key_input.setPlaceholderText("Paste NVIDIA API key here...")
+            self._key_input.setText((self._defaults.get("nvidia_api_key") or "").strip())
+            self._s3_hint.setText("<a href='https://build.nvidia.com' style='color: rgba(118, 185, 0,0.6); text-decoration: none; font-size: 10px;'>Get API Key →</a>")
+        else:
+            self._s3_title.setText("Google Gemini")
+            self._s3_title.setStyleSheet("color: #00e5ff; background: transparent; border: none;")
+            self._s3_sub.setText("Paste your Neural Key")
+            self._s3_sub.setStyleSheet("color: rgba(255,255,255,0.4); background: transparent; border: none;")
+            self._key_input.setPlaceholderText("Paste API key here...")
+            self._key_input.setText((self._defaults.get("gemini_api_key") or "").strip())
+            self._s3_hint.setText("<a href='https://aistudio.google.com/app/apikey' style='color: rgba(0, 229, 255,0.5); text-decoration: none; font-size: 10px;'>Get API Key →</a>")
+        self._s3_status.setText("")
+        self._key_input.setReadOnly(False)
         self._stack.setCurrentIndex(6)
 
     # ── STAGE 3 & 4: API Input + Auth ──────────────────────────────
@@ -6164,6 +6283,7 @@ class SetupOverlay(QWidget):
         hint = QLabel("<a href='https://aistudio.google.com/app/apikey' style='color: rgba(0, 229, 255,0.5); text-decoration: none; font-size: 10px;'>Get API Key →</a>")
         hint.setOpenExternalLinks(True)
         hint.setStyleSheet("background: transparent; border: none;")
+        self._s3_hint = hint
         status_row.addWidget(hint)
         blay.addLayout(status_row)
 
@@ -6180,10 +6300,10 @@ class SetupOverlay(QWidget):
         intro_lay.setSpacing(12)
 
         self._intro_lines = []
-        for txt in ["Identity confirmed.", "Hello.", "I'm Brahma Evo.", "Ready whenever you are."]:
+        for txt in ["Identity confirmed.", "Hello.", "I'm Sudarshana Chakra.", "Ready whenever you are."]:
             lbl = QLabel(txt)
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            if txt == "I'm Brahma Evo.":
+            if txt == "I'm Sudarshana Chakra.":
                 lbl.setFont(QFont("Segoe UI", 24, QFont.Weight.Bold))
                 lbl.setStyleSheet("color: #00e5ff; background: transparent; border: none;")
             else:
@@ -6195,7 +6315,7 @@ class SetupOverlay(QWidget):
 
         intro_lay.addSpacing(20)
 
-        self._launch_btn = QPushButton("Launch Brahma Evo →")
+        self._launch_btn = QPushButton("Launch Sudarshana Chakra →")
         self._launch_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._launch_btn.setFixedSize(220, 48)
         self._launch_btn.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
@@ -6245,10 +6365,16 @@ class SetupOverlay(QWidget):
             self._auth_timer.stop()
             self._s3_status.setText("✓ Identity Verified")
             self._s3_status.setStyleSheet("color: #37ff5f; background: transparent; border: none;")
-            self._s3_title.setText("✓ Google Gemini")
-            self._s3_title.setStyleSheet("color: #37ff5f; background: transparent; border: none;")
-            self._s3_sub.setText("Gemini 2.5 Pro  ·  Ready")
-            self._s3_sub.setStyleSheet("color: rgba(55,255,95,0.6); background: transparent; border: none;")
+            if self._setup_provider == "nvidia":
+                self._s3_title.setText("✓ NVIDIA NIM")
+                self._s3_title.setStyleSheet("color: #37ff5f; background: transparent; border: none;")
+                self._s3_sub.setText("NVIDIA Nemotron  ·  Ready")
+                self._s3_sub.setStyleSheet("color: rgba(55,255,95,0.6); background: transparent; border: none;")
+            else:
+                self._s3_title.setText("✓ Google Gemini")
+                self._s3_title.setStyleSheet("color: #37ff5f; background: transparent; border: none;")
+                self._s3_sub.setText("Gemini 3.8 Flash  ·  Ready")
+                self._s3_sub.setStyleSheet("color: rgba(55,255,95,0.6); background: transparent; border: none;")
             self._key_input.setStyleSheet("""
                 QLineEdit {
                     background: rgba(55, 255, 95, 0.04);
@@ -6542,7 +6668,7 @@ class SetupOverlay(QWidget):
         self._show_intro_final()
 
     def _show_intro_final(self):
-        """Show the Brahma Evo intro sequence."""
+        """Show the Sudarshana Chakra intro sequence."""
         page = self._stack.widget(6)
         lay = page.layout()
         self._intro_widget.setParent(None)
@@ -6662,7 +6788,14 @@ class SetupOverlay(QWidget):
                 n.setStyleSheet("color: #37ff5f; background: transparent; border: none; font-weight: bold;")
                 b.setStyleSheet("color: #37ff5f; background: transparent; border: none;")
             self._call_js("if(window.dissolveReactor) window.dissolveReactor();")
-            QTimer.singleShot(1200, lambda: self.done.emit(self._key_input.text().strip(), getattr(self, "_or_key_value", ""), self._sel_os))
+            key_val = self._key_input.text().strip()
+            if self._setup_provider == "nvidia":
+                nv_val = key_val or (self._defaults.get("nvidia_api_key") or "").strip()
+                gem_val = (self._defaults.get("gemini_api_key") or "").strip()
+            else:
+                gem_val = key_val or (self._defaults.get("gemini_api_key") or "").strip()
+                nv_val = (self._defaults.get("nvidia_api_key") or "").strip()
+            QTimer.singleShot(1200, lambda: self.done.emit(gem_val, getattr(self, "_or_key_value", ""), nv_val, self._sel_os))
 
 
 
@@ -6706,7 +6839,7 @@ class CommandBar(QWidget):
         lay.setContentsMargins(6, 4, 6, 4)
         lay.setSpacing(6)
 
-        # Brahma Evo mini logo
+        # Sudarshana Chakra mini logo
         logo_frame = QFrame()
         logo_frame.setFixedSize(32, 32)
         logo_frame.setStyleSheet("""
@@ -6727,7 +6860,7 @@ class CommandBar(QWidget):
 
         # Input field
         self._input = QLineEdit()
-        self._input.setPlaceholderText("Tell Brahma Evo what to do...")
+        self._input.setPlaceholderText("Tell Sudarshana Chakra what to do...")
         self._input.setFont(QFont("Segoe UI", 9))
         self._input.setFixedHeight(32)
         self._input.setStyleSheet(f"""
@@ -6907,7 +7040,7 @@ class DeveloperModeDialog(QDialog):
         title.setStyleSheet(f"color: {C.PRI};")
         root.addWidget(title)
 
-        desc = QLabel("Pick a workspace folder Brahma Evo should use when building websites or other workspace-based tasks.")
+        desc = QLabel("Pick a workspace folder Sudarshana Chakra should use when building websites or other workspace-based tasks.")
         desc.setWordWrap(True)
         desc.setStyleSheet(f"color: {C.TEXT_DIM};")
         root.addWidget(desc)
@@ -7634,7 +7767,7 @@ class BootSequenceOverlay(QWidget):
                     painter.drawEllipse(QPointF(s['x'], s['y']), s['size'], s['size'])
 
             # -------------------------------------------------------------
-            # 3. DRAW "BRAHMA" TEXT & TYPOGRAPHY EFFECT
+            # 3. DRAW "SUDARSHANA" TEXT & TYPOGRAPHY EFFECT
             # -------------------------------------------------------------
             if self._time >= 1.35:
                 text_t = min(1.0, (self._time - 1.35) / 0.45)
@@ -7643,17 +7776,17 @@ class BootSequenceOverlay(QWidget):
                 spacing_prog = min(1.0, (self._time - 1.35) / 1.5)
                 letter_spacing = 10.0 + (spacing_prog * 14.0)
 
-                font_brahma = QFont("Segoe UI", 56, QFont.Weight.Black)
-                font_brahma.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, letter_spacing)
-                painter.setFont(font_brahma)
+                font_sudarshana = QFont("Segoe UI", 56, QFont.Weight.Black)
+                font_sudarshana.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, letter_spacing)
+                painter.setFont(font_sudarshana)
 
-                rect_brahma = QRectF(cx - 500, cy - 85, 1000, 90)
+                rect_sudarshana = QRectF(cx - 500, cy - 85, 1000, 90)
 
                 # Outer text cyan glow
                 glow_col = QColor(0, 240, 255, int(text_alpha * 0.45))
                 painter.setPen(glow_col)
                 for ox, oy in [(-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1)]:
-                    painter.drawText(rect_brahma.translated(ox, oy), Qt.AlignmentFlag.AlignCenter, "BRAHMA")
+                    painter.drawText(rect_sudarshana.translated(ox, oy), Qt.AlignmentFlag.AlignCenter, "SUDARSHANA")
 
                 # Core white text with dynamic shimmer
                 if 1.8 <= self._time < 2.5:
@@ -7668,7 +7801,7 @@ class BootSequenceOverlay(QWidget):
                 else:
                     painter.setPen(QColor(255, 255, 255, text_alpha))
 
-                painter.drawText(rect_brahma, Qt.AlignmentFlag.AlignCenter, "BRAHMA")
+                painter.drawText(rect_sudarshana, Qt.AlignmentFlag.AlignCenter, "SUDARSHANA")
 
             # -------------------------------------------------------------
             # 4. DRAW "AI - EVO" WITH MAXIMUM IMPACT (>= 2.5s)
@@ -7974,7 +8107,7 @@ class MeetingOverlay(QWidget):
         self._speech.setStyleSheet(f"color: {C.WHITE}; background: transparent;")
         lay.addWidget(self._speech)
 
-        self._answer = QLabel("Brahma Evo will show the live answer here.")
+        self._answer = QLabel("Sudarshana Chakra will show the live answer here.")
         self._answer.setWordWrap(True)
         self._answer.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
         self._answer.setStyleSheet(f"color: {C.WHITE}; background: transparent;")
@@ -8304,7 +8437,7 @@ class FloatingLauncher(QWidget):
 
     def _apply_state_style(self):
         self.setToolTip(
-            f"Brahma Evo ({self._status_line})\n"
+            f"Sudarshana Chakra ({self._status_line})\n"
             "• Single-click: Chat Workspace\n"
             "• Double-click: Open Full App\n"
             "• Drag: Move (Spring Snap)"
@@ -8338,7 +8471,7 @@ class FloatingLauncher(QWidget):
             }}
         """)
 
-        open_full = QAction("Open Brahma Evo (Full App)", self)
+        open_full = QAction("Open Sudarshana Chakra (Full App)", self)
         open_full.triggered.connect(lambda: self.action_requested.emit("open_app"))
         menu.addAction(open_full)
 
@@ -8362,7 +8495,7 @@ class FloatingLauncher(QWidget):
         hide_act.triggered.connect(self.hide)
         menu.addAction(hide_act)
 
-        quit_act = QAction("Quit Brahma", self)
+        quit_act = QAction("Quit Sudarshana", self)
         quit_act.triggered.connect(lambda: self.action_requested.emit("quit"))
         menu.addAction(quit_act)
 
@@ -8529,7 +8662,7 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowType.Tool, False)
         self.setWindowFlag(Qt.WindowType.Window, True)
         self.setWindowIcon(self._make_window_icon())
-        self.setWindowTitle("Brahma Evo")
+        self.setWindowTitle("Sudarshana Chakra")
         self.setMinimumSize(_MIN_W, _MIN_H)
         self.resize(_DEFAULT_W, _DEFAULT_H)
 
@@ -8568,6 +8701,25 @@ class MainWindow(QMainWindow):
         central.setStyleSheet("background: transparent;")
         self._bg_widget = central
         self.setCentralWidget(central)
+        try:
+            from core.avatar import register_name_listener, get_display_name as _get_avatar_name
+
+            register_name_listener(lambda nm: self._bg_widget.set_avatar_name(nm))
+            self._bg_widget.set_avatar_name(_get_avatar_name())
+        except Exception:
+            pass
+        try:
+            from core import voice_security as _vsec
+
+            _vsec.register_lock_listener(
+                lambda locked, denied=False: self._bg_widget.set_voice_lock_state(locked, denied)
+            )
+            _st = _vsec.status() if hasattr(_vsec, "status") else {}
+            self._bg_widget.set_voice_lock_state(
+                bool(_st.get("enabled")) and bool(_st.get("enrolled")), False
+            )
+        except Exception:
+            pass
 
         root = QVBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
@@ -8866,12 +9018,14 @@ class MainWindow(QMainWindow):
                 "gemini_api_key": "",
                 "openrouter_api_key": "",
                 "anthropic_api_key": "",
+                "nvidia_api_key": "",
                 "os_system": platform.system(),
             }
         try:
             data = json.loads(API_FILE.read_text(encoding="utf-8"))
             if isinstance(data, dict):
                 data.setdefault("anthropic_api_key", "")
+                data.setdefault("nvidia_api_key", "")
                 return data
         except Exception:
             pass
@@ -8879,6 +9033,7 @@ class MainWindow(QMainWindow):
             "gemini_api_key": "",
             "openrouter_api_key": "",
             "anthropic_api_key": "",
+            "nvidia_api_key": "",
             "os_system": platform.system(),
         }
 
@@ -8893,10 +9048,10 @@ class MainWindow(QMainWindow):
                 winreg.KEY_READ | winreg.KEY_WRITE,
             ) as key:
                 try:
-                    value, _ = winreg.QueryValueEx(key, "Brahma Evo")
+                    value, _ = winreg.QueryValueEx(key, "Sudarshana Chakra")
                     run_value = _startup_run_value()
                     if value != run_value:
-                        winreg.SetValueEx(key, "Brahma Evo", 0, winreg.REG_SZ, run_value)
+                        winreg.SetValueEx(key, "Sudarshana Chakra", 0, winreg.REG_SZ, run_value)
                     return bool(value)
                 except FileNotFoundError:
                     return False
@@ -8910,10 +9065,10 @@ class MainWindow(QMainWindow):
         try:
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, _startup_registry_key()) as key:
                 if enabled:
-                    winreg.SetValueEx(key, "Brahma Evo", 0, winreg.REG_SZ, run_value)
+                    winreg.SetValueEx(key, "Sudarshana Chakra", 0, winreg.REG_SZ, run_value)
                 else:
                     try:
-                        winreg.DeleteValue(key, "Brahma Evo")
+                        winreg.DeleteValue(key, "Sudarshana Chakra")
                     except FileNotFoundError:
                         pass
             return True
@@ -9065,8 +9220,8 @@ class MainWindow(QMainWindow):
             except Exception:
                 pass
 
-    def set_brahma_connect_service(self, service):
-        self._brahma_connect = service
+    def set_sudarshana_connect_service(self, service):
+        self._sudarshana_connect = service
         if hasattr(self, "_devices_page"):
             self._devices_page.set_service(service)
             if service is not None:
@@ -9203,7 +9358,7 @@ class MainWindow(QMainWindow):
 
     def _browse_attachment(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Attach a file to Brahma Evo", str(Path.home()),
+            self, "Attach a file to Sudarshana Chakra", str(Path.home()),
             "All Files (*.*);;"
             "Images (*.jpg *.jpeg *.png *.gif *.webp *.bmp *.svg);;"
             "Documents (*.pdf *.docx *.txt *.md *.pptx);;"
@@ -9305,7 +9460,7 @@ class MainWindow(QMainWindow):
                     self.on_chat_event({"role": "user", "text": user_msg, "source": source})
                 except Exception:
                     pass
-        if hasattr(self, "_result_card") and low.startswith("brahma evo:"):
+        if hasattr(self, "_result_card") and low.startswith("sudarshana chakra:"):
             reply = raw.split(":", 1)[1].strip()
             self._result_card.set_body(reply[:80] + ("…" if len(reply) > 80 else ""))
             self._result_card.hide()
@@ -9509,7 +9664,7 @@ class MainWindow(QMainWindow):
             self._call_screening_dialog.close()
 
         dialog = QDialog(self)
-        dialog.setWindowTitle("Brahma Evo Call Screening")
+        dialog.setWindowTitle("Sudarshana Chakra Call Screening")
         dialog.setModal(False)
         dialog.setMinimumWidth(380)
         layout = QVBoxLayout(dialog)
@@ -9653,7 +9808,7 @@ class MainWindow(QMainWindow):
     def notify_phone_connected(self):
         if self._remote_overlay is not None:
             self._remote_overlay.mark_connected()
-        self._log_sig.emit("SYS: Phone connected to Brahma Evo remote.")
+        self._log_sig.emit("SYS: Phone connected to Sudarshana Chakra remote.")
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -9720,21 +9875,21 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_input"):
             ph_map = {
                 "LISTENING": "Listening... (or type your command)",
-                "SPEAKING": "Brahma Evo is responding...",
-                "THINKING": "Brahma is thinking...",
+                "SPEAKING": "Sudarshana Chakra is responding...",
+                "THINKING": "Sudarshana is thinking...",
                 "PROCESSING": "Processing request...",
                 "EXECUTING": "Executing action...",
                 "WORKING": "Working on it...",
                 "MUTED": "Microphone muted — type command here...",
                 "SCANNING": "Scanning display...",
             }
-            self._input.setPlaceholderText(ph_map.get(state, "Ask Brahma Evo anything..."))
+            self._input.setPlaceholderText(ph_map.get(state, "Ask Sudarshana Chakra anything..."))
 
         # Update chat workspace footer status
         if hasattr(self, "_inline_workspace") and hasattr(self._inline_workspace, "_footer_status"):
             foot_map = {
                 "LISTENING": "● Listening for voice command...",
-                "SPEAKING": "● Brahma is speaking...",
+                "SPEAKING": "● Sudarshana is speaking...",
                 "THINKING": "● Thinking...",
                 "PROCESSING": "● Processing...",
                 "EXECUTING": "● Executing system command...",
@@ -9742,7 +9897,7 @@ class MainWindow(QMainWindow):
                 "MUTED": "● Voice input muted",
                 "SCANNING": "● Vision system active",
             }
-            self._inline_workspace._footer_status.setText(foot_map.get(state, "Brahma Evo is online"))
+            self._inline_workspace._footer_status.setText(foot_map.get(state, "Sudarshana Chakra is online"))
 
         if hasattr(self, "_status_chip"):
             chip_text = {
@@ -9768,13 +9923,13 @@ class MainWindow(QMainWindow):
             )
         if hasattr(self, "_task_card"):
             if state in ("THINKING", "PROCESSING", "EXECUTING", "WORKING"):
-                self._task_card.set_task("Working on it...", "Brahma Evo is processing your request.", 72)
+                self._task_card.set_task("Working on it...", "Sudarshana Chakra is processing your request.", 72)
             elif state == "SPEAKING":
-                self._task_card.set_task("Responding...", "Brahma Evo is speaking now.", 100)
+                self._task_card.set_task("Responding...", "Sudarshana Chakra is speaking now.", 100)
             elif state == "MUTED":
                 self._task_card.set_task("Microphone muted", "Voice input is paused.", 0)
             else:
-                self._task_card.set_task("Ready", "Brahma Evo is idle and ready.", 0)
+                self._task_card.set_task("Ready", "Sudarshana Chakra is idle and ready.", 0)
         if hasattr(self, "_result_card"):
             if state in ("THINKING", "PROCESSING", "EXECUTING", "WORKING"):
                 self._result_card.set_body("Action pending")
@@ -9789,8 +9944,8 @@ class MainWindow(QMainWindow):
         if not API_FILE.exists(): return False
         try:
             d = json.loads(API_FILE.read_text(encoding="utf-8"))
-            return (bool(d.get("gemini_api_key")) and
-                    bool(d.get("os_system")))
+            has_provider_key = bool(d.get("gemini_api_key")) or bool(d.get("nvidia_api_key"))
+            return (has_provider_key and bool(d.get("os_system")))
         except Exception:
             return False
 
@@ -10003,7 +10158,7 @@ class MainWindow(QMainWindow):
 
 
     # Change signature:
-    def _on_setup_done(self, key: str, or_key: str, os_name: str):
+    def _on_setup_done(self, key: str, or_key: str, nv_key: str, os_name: str):
         try:
             os.makedirs(CONFIG_DIR, exist_ok=True)
             existing = self._load_api_defaults()
@@ -10012,10 +10167,28 @@ class MainWindow(QMainWindow):
                     "gemini_api_key":    key,
                     "openrouter_api_key": or_key,
                     "anthropic_api_key": existing.get("anthropic_api_key", ""),
+                    "nvidia_api_key":    nv_key,
                     "os_system":         os_name,
                 }, indent=4),
                 encoding="utf-8",
             )
+            # Route machine-verified keys securely to the project .env file, never hardcoded.
+            from core.env import write_key, load_dotenv
+            try:
+                write_key("GEMINI_API_KEY", key)
+                write_key("NVIDIA_API_KEY", nv_key)
+                load_dotenv()
+            except Exception as env_e:
+                self._log.append_log(f"ERR: .env write failed: {env_e}")
+            # Default to the provider the user just configured.
+            if not key and nv_key:
+                try:
+                    settings = self._load_app_settings()
+                    settings["default_ai_provider"] = "NVIDIA"
+                    settings["offline_mode_enabled"] = False
+                    self._save_app_settings(settings)
+                except Exception:
+                    pass
             self._ready = True
             self._api_ready = True
             if self._overlay:
@@ -10026,7 +10199,7 @@ class MainWindow(QMainWindow):
                 self._floating_gesture_card.show()
             self.showNormal()
             self._apply_state("LISTENING")
-            self._log.append_log(f"SYS: Initialised. OS={os_name.upper()}. Brahma Evo online.")
+            self._log.append_log(f"SYS: Initialised. OS={os_name.upper()}. Sudarshana Chakra online.")
         except Exception as e:
             self._log.append_log(f"ERR: setup failed: {e}")
             traceback.print_exc()
@@ -10070,8 +10243,8 @@ class MainWindow(QMainWindow):
         self._developer_card.hide()
         self._developer_status_lbl = QLabel(self._hidden_legacy_container)
 
-        self._hud_result_wing = BrahmaResultWing(self)
-        self._hud_telemetry_wing = BrahmaTelemetryWing(self)
+        self._hud_result_wing = SudarshanaResultWing(self)
+        self._hud_telemetry_wing = SudarshanaTelemetryWing(self)
         self._command_card = self._hud_result_wing
         self._result_card = self._hud_telemetry_wing
 
@@ -10110,8 +10283,8 @@ class MainWindow(QMainWindow):
         cmd_lay.addLayout(self._build_command_row())
         stage.addWidget(self._command_panel)
 
-        self._home_page = BrahmaHomePage()
-        self._devices_page = BrahmaConnectDevicesPage(self)
+        self._home_page = SudarshanaHomePage()
+        self._devices_page = SudarshanaConnectDevicesPage(self)
         self._center_stack = QStackedWidget()
         self._center_stack.setStyleSheet("background: transparent; border: none;")
         self._center_stack.addWidget(w)
@@ -10151,7 +10324,7 @@ class MainWindow(QMainWindow):
         pulse_dot.setStyleSheet("color: #37ff5f; background: transparent;")
         header_bar.addWidget(pulse_dot)
 
-        header_title = QLabel("BRAHMA CHAT")
+        header_title = QLabel("SUDARSHANA CHAT")
         header_title.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
         header_title.setStyleSheet(f"color: {C.WHITE}; background: transparent; letter-spacing: 1px;")
         header_bar.addWidget(header_title)
@@ -10241,7 +10414,7 @@ class MainWindow(QMainWindow):
         row.setSpacing(12)
 
         self._input = QLineEdit()
-        self._input.setPlaceholderText("Ask Brahma Evo anything...")
+        self._input.setPlaceholderText("Ask Sudarshana Chakra anything...")
         self._input.setFont(QFont("Segoe UI", 10))
         self._input.setFixedHeight(50)
         self._input.setStyleSheet(f"""
@@ -10405,7 +10578,7 @@ class SystemConnectivitySidebar(QFrame):
         self._quick_actions = QVBoxLayout()
         self._quick_actions.setSpacing(10)
         lay.addLayout(self._quick_actions)
-        self._mk_quick_action("Γå╗ Restart Brahma Evo", QStyle.StandardPixmap.SP_BrowserReload, self._restart)
+        self._mk_quick_action("Γå╗ Restart Sudarshana Chakra", QStyle.StandardPixmap.SP_BrowserReload, self._restart)
         self._mk_quick_action("Γƒ│ Reload Configuration", QStyle.StandardPixmap.SP_BrowserReload, self._reload)
         self._mk_quick_action("≡ƒôü Open Data Folder", QStyle.StandardPixmap.SP_DirOpenIcon, self._open_data_folder)
         self._mk_quick_action("≡ƒôä View Logs", QStyle.StandardPixmap.SP_FileDialogDetailedView, self._view_logs)
@@ -10504,7 +10677,7 @@ class SettingsHubPage(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(title)
 
-        subtitle = QLabel("Select a section below to configure your Brahma Evo environment.")
+        subtitle = QLabel("Select a section below to configure your Sudarshana Chakra environment.")
         subtitle.setFont(QFont("Segoe UI", 12))
         subtitle.setStyleSheet(f"color: {C.TEXT_DIM};")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -10515,7 +10688,7 @@ class SettingsHubPage(QWidget):
         cards_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         cards_data = [
-            ("Brahma Evo Home", "Configure smart home integrations", "🏠", 1),
+            ("Sudarshana Chakra Home", "Configure smart home integrations", "🏠", 1),
             ("Devices", "Manage and control connected hardware", "🔌", 2),
             ("System & Connect", "Configure providers and api preferences", "⚙️", 3)
         ]
@@ -10879,7 +11052,7 @@ class SystemConnectivityPage(QWidget):
 
 
         # Instagram Connect
-        ig_card = self._card("Instagram Connect", "Connect your personal Instagram account to allow Brahma Evo to manage your DMs.")
+        ig_card = self._card("Instagram Connect", "Connect your personal Instagram account to allow Sudarshana Chakra to manage your DMs.")
         ig_lay = ig_card.layout()
 
         self._ig_status_lbl = QLabel("Status: Checking...")
@@ -11019,16 +11192,69 @@ class SystemConnectivityPage(QWidget):
         ast_row = QHBoxLayout()
         ast_row.addWidget(QLabel("Assistant Name"))
         self._set_ast_name = QLineEdit(identity.get_assistant_name())
-        self._set_ast_name.textChanged.connect(lambda t: identity.set_assistant_name(t.strip() or "Brahma"))
+        self._set_ast_name.textChanged.connect(lambda t: identity.set_assistant_name(t.strip() or "Sudarshana"))
         ast_row.addWidget(self._set_ast_name)
         ilay.addLayout(ast_row)
         
         app_row = QHBoxLayout()
         app_row.addWidget(QLabel("Application Name"))
         self._set_app_name = QLineEdit(identity.get_application_name())
-        self._set_app_name.textChanged.connect(lambda t: identity.set_application_name(t.strip() or "Brahma Evo"))
+        self._set_app_name.setReadOnly(True)
+        self._set_app_name.setToolTip("Brand name is immutable.")
+        self._set_app_name.textChanged.connect(lambda t: identity.set_application_name(t.strip() or "Sudarshana Chakra"))
         app_row.addWidget(self._set_app_name)
         ilay.addLayout(app_row)
+
+        # System Avatar (locked photo, editable name only)
+        try:
+            from core.avatar import (
+                get_avatar_pixmap as _av_pix,
+                AVATAR_LABEL as _AV_LABEL,
+                get_display_name as _av_get,
+                set_display_name as _av_set,
+            )
+        except Exception:
+            _AV_LABEL = "\U0001F512 System Avatar (Locked / Permanent)"
+
+            def _av_get():
+                return "Guardian Avatar"
+
+            def _av_set(_name):
+                return None
+
+            def _av_pix(_size):
+                from PyQt6.QtGui import QPixmap
+
+                return QPixmap()
+
+        avatar_row = QHBoxLayout()
+        _av_pic = QLabel()
+        _av_pic.setFixedSize(72, 72)
+        _av_pic.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        _av_pic.setPixmap(_av_pix(72))
+        avatar_row.addWidget(_av_pic)
+
+        _av_col = QVBoxLayout()
+        _av_title = QLabel(_AV_LABEL)
+        _av_title.setStyleSheet(f"color: {C.ACC}; font-weight: bold;")
+        _av_col.addWidget(_av_title)
+
+        _av_name_row = QHBoxLayout()
+        _av_name_row.addWidget(QLabel("Display Name"))
+        self._set_avatar_name = QLineEdit(_av_get())
+        self._set_avatar_name.setMaxLength(40)
+        self._set_avatar_name.setPlaceholderText("Guardian Avatar")
+        self._set_avatar_name.textChanged.connect(lambda t: _av_set(t))
+        _av_name_row.addWidget(self._set_avatar_name)
+        _av_col.addLayout(_av_name_row)
+
+        _av_note = QLabel("Portrait is permanently locked. Only the display name may be changed.")
+        _av_note.setStyleSheet(f"color: {C.TEXT_DIM}; font-size: 11px;")
+        _av_col.addWidget(_av_note)
+
+        avatar_row.addLayout(_av_col)
+        avatar_row.addStretch()
+        ilay.addLayout(avatar_row)
 
         # Owner Profile
         own_row = QHBoxLayout()
@@ -11064,7 +11290,7 @@ class SystemConnectivityPage(QWidget):
         self._gemini_row, self._gemini_status, self._gemini_key = self._provider_row(
             "Google Gemini",
             self._api_defaults.get("gemini_api_key", ""),
-            "gemini-2.5-flash",
+            "gemini-3.8-flash",
             "gemini",
         )
         self._or_row, self._or_status, self._or_key = self._provider_row(
@@ -11073,16 +11299,25 @@ class SystemConnectivityPage(QWidget):
             "auto",
             "openrouter",
         )
+        self._nvidia_row, self._nvidia_status, self._nvidia_key = self._provider_row(
+            "NVIDIA",
+            self._api_defaults.get("nvidia_api_key", ""),
+            "meta/llama-3.3-70b-instruct",
+            "nvidia",
+        )
         lay1.addWidget(self._gemini_row)
+        lay1.addWidget(self._nvidia_row)
         lay1.addWidget(self._or_row)
         controls = QHBoxLayout()
         controls.setSpacing(12)
         self._default_provider = QComboBox()
-        self._default_provider.addItems(["Google Gemini", "OpenRouter", "Local"])
+        self._default_provider.addItems(["Google Gemini", "NVIDIA", "OpenRouter", "Local"])
         
         current_provider = self._load_app_settings().get("default_ai_provider", "Gemini")
         if current_provider in {"Gemini", "Google Gemini"}:
             self._default_provider.setCurrentText("Google Gemini")
+        elif str(current_provider).lower() == "nvidia":
+            self._default_provider.setCurrentText("NVIDIA")
         elif current_provider == "Local":
             self._default_provider.setCurrentText("Local")
         else:
@@ -11178,7 +11413,7 @@ class SystemConnectivityPage(QWidget):
         lay.addWidget(card)
 
         # Mobile connect
-        mobile = self._card("Mobile Connect", "Connect your phone and control Brahma Evo remotely.")
+        mobile = self._card("Mobile Connect", "Connect your phone and control Sudarshana Chakra remotely.")
         ml = mobile.layout()
         self._mobile_status = QLabel("Connection Status: Ready")
         self._mobile_phone = QLabel("Phone Name: Not connected")
@@ -11217,9 +11452,9 @@ class SystemConnectivityPage(QWidget):
         lay.addWidget(attention)
 
         # Startup
-        startup = self._card("Startup", "Use Brahma Evo with Windows startup preferences.")
+        startup = self._card("Startup", "Use Sudarshana Chakra with Windows startup preferences.")
         sl = startup.layout()
-        self._startup_launch_btn = self._mk_toggle("Launch Brahma Evo when Windows starts", bool(self._load_app_settings().get("show_workspace_on_startup", False)), self._toggle_startup_from_page)
+        self._startup_launch_btn = self._mk_toggle("Launch Sudarshana Chakra when Windows starts", bool(self._load_app_settings().get("show_workspace_on_startup", False)), self._toggle_startup_from_page)
         self._startup_minimized_btn = self._mk_toggle("Launch Minimized", bool(self._load_app_settings().get("launch_minimized", False)), self._toggle_launch_minimized)
         self._startup_updates_btn = self._mk_toggle("Check for updates on startup", bool(self._load_app_settings().get("check_updates_on_startup", True)), self._toggle_update_check)
         sl.addWidget(self._startup_launch_btn)
@@ -11228,7 +11463,7 @@ class SystemConnectivityPage(QWidget):
         lay.addWidget(startup)
 
         # Shortcuts & Pinning
-        shortcuts = self._card("Shortcuts & Pinning", "Create shortcuts and pin Brahma Evo to your Windows system.")
+        shortcuts = self._card("Shortcuts & Pinning", "Create shortcuts and pin Sudarshana Chakra to your Windows system.")
         shl = shortcuts.layout()
         
         btn_row = QHBoxLayout()
@@ -11245,7 +11480,7 @@ class SystemConnectivityPage(QWidget):
         lay.addWidget(shortcuts)
 
         # App Theme
-        theme_card = self._card("App Theme", "Select the primary color theme for Brahma Evo.")
+        theme_card = self._card("App Theme", "Select the primary color theme for Sudarshana Chakra.")
         tl = theme_card.layout()
         theme_row = QHBoxLayout()
         theme_row.addWidget(QLabel("Primary Color:"))
@@ -11293,7 +11528,7 @@ class SystemConnectivityPage(QWidget):
         al.addWidget(self._preview_progress)
         lay.addWidget(anim)
         # Discord bot
-        discord = self._card("Discord Bot", "Mirror Brahma Evo between the app and your server.")
+        discord = self._card("Discord Bot", "Mirror Sudarshana Chakra between the app and your server.")
         dl = discord.layout()
         self._discord_defaults = self._load_discord_settings()
         self._discord_status = QLabel("Bot Status: Offline")
@@ -11328,7 +11563,7 @@ class SystemConnectivityPage(QWidget):
         dl.addWidget(self._discord_msg)
         lay.addWidget(discord)
 
-        about = self._card("About Brahma Evo", "Brahma Evo information only.")
+        about = self._card("About Sudarshana Chakra", "Sudarshana Chakra information only.")
         ab = about.layout()
         about_grid = QGridLayout()
         about_grid.setHorizontalSpacing(22)
@@ -11384,7 +11619,7 @@ class SystemConnectivityPage(QWidget):
 
         rule_input_row = QHBoxLayout()
         self._ah_rule_input = QLineEdit()
-        self._ah_rule_input.setPlaceholderText("Teach Brahma a rule (e.g. Always summarize in bullet points)")
+        self._ah_rule_input.setPlaceholderText("Teach Sudarshana a rule (e.g. Always summarize in bullet points)")
         rule_input_row.addWidget(self._ah_rule_input)
         self._ah_learn_btn = QPushButton("Teach Rule")
         self._ah_learn_btn.clicked.connect(self._handle_ah_learn_rule)
@@ -11402,7 +11637,7 @@ class SystemConnectivityPage(QWidget):
         except Exception:
             pass
 
-        # Brahma Audio Routing & Hardware Controls
+        # Sudarshana Audio Routing & Hardware Controls
         audio_card = self._card("Audio Routing & Hardware Controls", "Select hardware audio interfaces, toggle Push-to-Talk, or inspect long-term memory.")
         alay = audio_card.layout()
 
@@ -11724,7 +11959,7 @@ class SystemConnectivityPage(QWidget):
         self._update_ig_status()
         from PyQt6.QtWidgets import QMessageBox
         name_str = f" as @{detected_username}" if detected_username else ""
-        QMessageBox.information(self, "Instagram Connected", f"Instagram successfully connected via Browser{name_str}!\n\nBrahma is now active for voice DM notifications and instant direct replies.")
+        QMessageBox.information(self, "Instagram Connected", f"Instagram successfully connected via Browser{name_str}!\n\nSudarshana is now active for voice DM notifications and instant direct replies.")
 
     def _ig_browser_error(self, err_msg):
         self._ig_browser_btn.setEnabled(True)
@@ -12099,7 +12334,7 @@ class SystemConnectivityPage(QWidget):
             "Steps to complete:\n"
             "1. Log in to Spotify in the browser window.\n"
             "2. Click 'Agree' to grant playback permissions.\n"
-            "3. Once redirected to callback, Brahma Evo will automatically detect authorization!"
+            "3. Once redirected to callback, Sudarshana Chakra will automatically detect authorization!"
         )
 
     def _poll_spotify_auth_status(self):
@@ -12300,7 +12535,7 @@ class SystemConnectivityPage(QWidget):
             AutoHealEngine.record_last_error(tb)
             self._ah_output_lbl.setText(
                 f"❌ Simulated bug triggered in test_action.py: {type(e).__name__}: {e}\n"
-                f"Traceback captured in AutoHealEngine! Click 'Fix Captured Bug' or say 'Brahma, fix that bug'."
+                f"Traceback captured in AutoHealEngine! Click 'Fix Captured Bug' or say 'Sudarshana, fix that bug'."
             )
 
     def _handle_ah_fix_captured_bug(self):
@@ -12377,7 +12612,7 @@ class SystemConnectivityPage(QWidget):
         box = self._card("Quick Actions", "")
         lay = box.layout()
         actions = [
-            ("Restart Brahma Evo", QStyle.StandardPixmap.SP_BrowserReload, self._restart_app),
+            ("Restart Sudarshana Chakra", QStyle.StandardPixmap.SP_BrowserReload, self._restart_app),
             ("Reload Configuration", QStyle.StandardPixmap.SP_BrowserReload, self._reload_config),
             ("Open Data Folder", QStyle.StandardPixmap.SP_DirOpenIcon, self._open_data_folder),
             ("View Logs", QStyle.StandardPixmap.SP_FileDialogDetailedView, self._view_logs),
@@ -12412,6 +12647,8 @@ class SystemConnectivityPage(QWidget):
         return {
             "gemini_api_key": "",
             "openrouter_api_key": "",
+            "anthropic_api_key": "",
+            "nvidia_api_key": "",
             "os_system": platform.system(),
         }
 
@@ -12466,6 +12703,8 @@ class SystemConnectivityPage(QWidget):
     def _test_provider(self, setting_key: str):
         if setting_key == "gemini":
             msg = "Google Gemini key detected." if self._load_api_defaults().get("gemini_api_key") else "Google Gemini key missing."
+        elif setting_key == "nvidia":
+            msg = "NVIDIA NIM key detected." if self._load_api_defaults().get("nvidia_api_key") else "NVIDIA NIM key missing."
         else:
             msg = "OpenRouter key detected." if self._load_api_defaults().get("openrouter_api_key") else "OpenRouter key missing."
         if self._ctrl() and hasattr(self._ctrl(), "write_log"):
@@ -12543,6 +12782,16 @@ class SystemConnectivityPage(QWidget):
             if hasattr(self, "_local_ai_widget"):
                 self._local_ai_widget.setVisible(True)
             msg = "SYS: Default AI provider set to Local AI (Ollama). Offline Mode active."
+        elif raw == "nvidia":
+            provider = "NVIDIA"
+            self._set_setting("offline_mode_enabled", False)
+            if hasattr(self, "_offline_mode_btn"):
+                self._offline_mode_btn.blockSignals(True)
+                self._offline_mode_btn.setChecked(False)
+                self._offline_mode_btn.blockSignals(False)
+            if hasattr(self, "_local_ai_widget"):
+                self._local_ai_widget.setVisible(False)
+            msg = "SYS: Default AI provider set to NVIDIA. Cloud connectivity active."
         else:
             provider = "OpenRouter"
             self._set_setting("offline_mode_enabled", False)
@@ -12637,7 +12886,7 @@ class SystemConnectivityPage(QWidget):
             self._ctrl()._win._start_discord_bot()
             self._ctrl()._win._stop_discord_bot()
             self._discord_status.setText("Bot Status: Test sent")
-            self._discord_msg.setText("Connected as Brahma Evo#9649" if self._discord_token.text().strip() else "Bot Offline")
+            self._discord_msg.setText("Connected as Sudarshana Chakra#9649" if self._discord_token.text().strip() else "Bot Offline")
 
     def _restart_discord_from_page(self):
         if self._ctrl() and hasattr(self._ctrl(), "_win"):
@@ -12696,13 +12945,17 @@ class SystemConnectivityPage(QWidget):
         try:
             self._gemini_status.setText("Connected" if api.get("gemini_api_key") else "Not connected")
             self._or_status.setText("Connected" if api.get("openrouter_api_key") else "Not connected")
+            self._nvidia_status.setText("Connected" if api.get("nvidia_api_key") else "Not connected")
             self._gemini_key.setText(self._provider_key_preview(api.get("gemini_api_key", "")))
             self._or_key.setText(self._provider_key_preview(api.get("openrouter_api_key", "")))
+            self._nvidia_key.setText(self._provider_key_preview(api.get("nvidia_api_key", "")))
             
             prov = app.get("default_ai_provider", "Gemini")
             is_offline = bool(app.get("offline_mode_enabled", False))
             if prov == "Local" or is_offline:
                 disp_prov = "Local"
+            elif str(prov).lower() == "nvidia":
+                disp_prov = "NVIDIA"
             elif prov == "OpenRouter":
                 disp_prov = "OpenRouter"
             else:
@@ -12744,7 +12997,7 @@ class SystemConnectivityPage(QWidget):
         token = (discord.get("bot_token") or "").strip()
         if enabled and token:
             self._discord_status.setText("Bot Status: Online")
-            self._discord_msg.setText("Connected as Brahma Evo#9649")
+            self._discord_msg.setText("Connected as Sudarshana Chakra#9649")
         elif token:
             self._discord_status.setText("Bot Status: Offline")
             self._discord_msg.setText("Bot Offline")
@@ -12801,12 +13054,12 @@ class SystemConnectivityPage(QWidget):
                 desktop_dir = Path(os.path.expanduser("~")) / "Desktop"
                 
             desktop_dir.mkdir(parents=True, exist_ok=True)
-            shortcut_path = desktop_dir / "Brahma Evo - Premium.lnk"
+            shortcut_path = desktop_dir / "Sudarshana Chakra - Premium.lnk"
             
             # Base variables
             base_dir = Path(os.path.abspath("."))
             script_path = base_dir / "main.py"
-            icon_path = base_dir / "assets" / "Brahma_Lite_Logo.ico"
+            icon_path = base_dir / "assets" / "Sudarshana_Lite_Logo.ico"
             
             python_exe = sys.executable
             if not python_exe:
@@ -12831,7 +13084,7 @@ class SystemConnectivityPage(QWidget):
                 f"$Shortcut.Arguments = '{_ps_escape(shortcut_args)}'",
                 f"$Shortcut.WorkingDirectory = '{_ps_escape(str(base_dir))}'",
                 "$Shortcut.WindowStyle = 7",
-                "$Shortcut.Description = 'Launch Brahma Evo - Premium'",
+                "$Shortcut.Description = 'Launch Sudarshana Chakra - Premium'",
                 f"if ('{_ps_escape(icon_value)}') {{ $Shortcut.IconLocation = '{_ps_escape(icon_value)},0' }}",
                 "$Shortcut.Save()",
             ])
@@ -12891,9 +13144,9 @@ class SystemConnectivityPage(QWidget):
             )
             
             if res.returncode == 0:
-                return True, "Brahma Evo has been pinned to your Taskbar!"
+                return True, "Sudarshana Chakra has been pinned to your Taskbar!"
             else:
-                return False, "Windows restricts programmatic taskbar pinning. Please right-click the 'Brahma Evo - Premium.lnk' shortcut on your Desktop and select 'Pin to taskbar', or drag it directly onto your taskbar."
+                return False, "Windows restricts programmatic taskbar pinning. Please right-click the 'Sudarshana Chakra - Premium.lnk' shortcut on your Desktop and select 'Pin to taskbar', or drag it directly onto your taskbar."
         except Exception as e:
             return False, f"Error pinning to taskbar: {e}"
 
@@ -12977,7 +13230,7 @@ class SmartDevicesSection(QFrame):
                 background: rgba(0, 229, 255,0.16);
             }}
         """)
-        self._open_home_btn.clicked.connect(self._open_brahma_home)
+        self._open_home_btn.clicked.connect(self._open_sudarshana_home)
         header.addWidget(self._open_home_btn)
         root.addLayout(header)
 
@@ -12995,7 +13248,7 @@ class SmartDevicesSection(QFrame):
         empty_desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_desc.setFont(QFont("Segoe UI", 8))
         empty_desc.setStyleSheet(f"color: {C.TEXT_DIM};")
-        empty_btn = QPushButton("Open Brahma Evo Home")
+        empty_btn = QPushButton("Open Sudarshana Chakra Home")
         empty_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         empty_btn.setFixedWidth(160)
         empty_btn.setStyleSheet(f"""
@@ -13010,7 +13263,7 @@ class SmartDevicesSection(QFrame):
                 background: rgba(0, 229, 255,0.18);
             }}
         """)
-        empty_btn.clicked.connect(self._open_brahma_home)
+        empty_btn.clicked.connect(self._open_sudarshana_home)
         empty_lay.addStretch(1)
         empty_lay.addWidget(empty_title)
         empty_lay.addWidget(empty_desc)
@@ -13121,7 +13374,7 @@ class SmartDevicesSection(QFrame):
     def _controller_bridge(self):
         return self._controller
 
-    def _open_brahma_home(self):
+    def _open_sudarshana_home(self):
         bridge = self._controller_bridge()
         if bridge and hasattr(bridge, "_set_page"):
             bridge._set_page("home")
@@ -13550,7 +13803,7 @@ class _ConnectDeviceCard(QFrame):
         super().mouseReleaseEvent(event)
 
 
-class BrahmaConnectDevicesPage(QFrame):
+class SudarshanaConnectDevicesPage(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._service = None
@@ -13561,9 +13814,9 @@ class BrahmaConnectDevicesPage(QFrame):
         self._selected_device_id: str | None = None
         self._onboarding_known_device_ids: set[str] = set()
 
-        self.setObjectName("BrahmaConnectDevicesPage")
+        self.setObjectName("SudarshanaConnectDevicesPage")
         self.setStyleSheet(f"""
-            QFrame#BrahmaConnectDevicesPage {{
+            QFrame#SudarshanaConnectDevicesPage {{
                 background: transparent;
                 border: none;
             }}
@@ -13583,7 +13836,7 @@ class BrahmaConnectDevicesPage(QFrame):
         self._title = QLabel("DEVICES")
         self._title.setFont(QFont("Segoe UI", 18, QFont.Weight.Black))
         self._title.setStyleSheet("color: #ffffff; letter-spacing: 2px;")
-        self._subtitle = QLabel("Everything connected to Brahma.")
+        self._subtitle = QLabel("Everything connected to Sudarshana.")
         self._subtitle.setFont(QFont("Segoe UI", 9))
         self._subtitle.setStyleSheet("color: rgba(255,255,255,0.62);")
         title_box.addWidget(self._title)
@@ -13937,7 +14190,7 @@ class BrahmaConnectDevicesPage(QFrame):
         self._onboarding_pulse = 0
 
     def _service_obj(self):
-        return self._service or getattr(self.parentWidget(), "_brahma_connect", None)
+        return self._service or getattr(self.parentWidget(), "_sudarshana_connect", None)
 
     def set_service(self, service):
         self._service = service
@@ -13964,7 +14217,7 @@ class BrahmaConnectDevicesPage(QFrame):
             import io
             import qrcode
 
-            self._onboarding_offer = dict(service.create_pairing_offer(device_name="Brahma Connect", platform="gateway"))
+            self._onboarding_offer = dict(service.create_pairing_offer(device_name="Sudarshana Connect", platform="gateway"))
             code = str(self._onboarding_offer.get("pairing_code") or "------")
             self._onb_code_lbl.setText(code)
             self._onb_status_lbl.setText("WAITING FOR CONNECTION")
@@ -14194,12 +14447,12 @@ class _RootShim:
         pass
 
 
-class BrahmaUI:
+class SudarshanaUI:
     def __init__(self, face_path: str, size=None, *, show_immediately: bool = True):
         self._app = QApplication.instance() or QApplication(sys.argv)
         self._app.setStyle("Fusion")
         self._app.setQuitOnLastWindowClosed(False)
-        self._app.setApplicationDisplayName("Brahma Evo")
+        self._app.setApplicationDisplayName("Sudarshana Chakra")
         self._app.setWindowIcon(self._make_app_icon())
         try:
             current_store = workspace_store()
@@ -14256,7 +14509,7 @@ class BrahmaUI:
         except Exception:
             pass
         self._tray = QSystemTrayIcon(self._make_app_icon(), self._app)
-        self._tray.setToolTip("Brahma Evo")
+        self._tray.setToolTip("Sudarshana Chakra")
         self._tray.activated.connect(self._on_tray_activated)
         self._tray.setContextMenu(self._build_tray_menu())
         self._tray.show()
@@ -14293,8 +14546,8 @@ class BrahmaUI:
     def _make_app_icon(self) -> QIcon:
         return _logo_icon()
 
-    def set_brahma_connect_service(self, service):
-        self._win.set_brahma_connect_service(service)
+    def set_sudarshana_connect_service(self, service):
+        self._win.set_sudarshana_connect_service(service)
 
 
     
@@ -14991,7 +15244,7 @@ class BrahmaUI:
             self._win._hud_deliverable_sig.emit(payload)
 
     def show_content(self, title: str, body: str):
-        """Universal rich content presenter. Automatically routes to the Brahma Holographic Left Deliverable Wing."""
+        """Universal rich content presenter. Automatically routes to the Sudarshana Holographic Left Deliverable Wing."""
         import re
         file_path = None
         m = re.search(r'([A-Za-z]:\\[^\s"\'<>`\r\n]+\.(?:pdf|docx|xlsx|pptx|png|jpg|mp4|py|html|json|txt))', body)

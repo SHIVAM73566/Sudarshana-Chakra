@@ -72,7 +72,7 @@ def _panel_style(border_alpha: int = 34) -> str:
 def _soft_button_style() -> str:
     return (
         f"QPushButton {{ background: rgba(255,255,255,0.03); color: {TEXT}; "
-        "border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0 12px; }}"
+        "border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0 12px; }"
         f"QPushButton:hover {{ border: 1px solid {ACCENT}; background: rgba(0, 229, 255,0.08); }}"
     )
 
@@ -689,7 +689,7 @@ class _DeviceTile(ClickableFrame):
             self.select_requested.emit(str(device_id))
 
 
-class BrahmaHomePage(QWidget):
+class SudarshanaHomePage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._service = SmartHomeService()
@@ -701,8 +701,8 @@ class BrahmaHomePage(QWidget):
         self._activity_items: list[dict[str, Any]] = []
         self._device_columns_cached = 0
 
-        self.setObjectName("BrahmaHomePageModern")
-        self.setStyleSheet(f"QWidget#BrahmaHomePageModern {{ background: transparent; }} QScrollArea {{ background: transparent; border: none; }}")
+        self.setObjectName("SudarshanaHomePageModern")
+        self.setStyleSheet(f"QWidget#SudarshanaHomePageModern {{ background: transparent; }} QScrollArea {{ background: transparent; border: none; }}")
 
         root = QHBoxLayout(self)
         root.setContentsMargins(18, 16, 18, 16)
@@ -813,10 +813,10 @@ class BrahmaHomePage(QWidget):
         row = QHBoxLayout()
         row.setSpacing(12)
         text = QVBoxLayout()
-        title = QLabel("BRAHMA EVO HOME")
+        title = QLabel("SUDARSHANA CHAKRA HOME")
         title.setFont(QFont("Segoe UI", 24, QFont.Weight.Black))
         title.setStyleSheet(f"color: {TEXT}; letter-spacing: 1px;")
-        subtitle = QLabel("Control your smart home with Brahma Evo.")
+        subtitle = QLabel("Control your smart home with Sudarshana Chakra.")
         subtitle.setFont(QFont("Segoe UI", 11))
         subtitle.setStyleSheet(f"color: {TEXT_DIM};")
         text.addWidget(title)
@@ -958,7 +958,7 @@ class BrahmaHomePage(QWidget):
         lbl.setFont(QFont("Segoe UI", 9))
         lbl.setStyleSheet(f"color: {TEXT_DIM};")
         
-        word = QLabel("Brahma Evo")
+        word = QLabel("Sudarshana Chakra")
         word.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
         word.setStyleSheet(f"color: {ACCENT};")
         
@@ -1376,7 +1376,7 @@ class BrahmaHomePage(QWidget):
                 bar.setFixedHeight(max(6, min(24, height)))
                 bar.setStyleSheet(f"background: {'rgba(0, 229, 255,0.35)' if self._voice_state in ('Listening', 'Executing') else 'rgba(255,255,255,0.15)'}; border-radius: 2px;")
         if hasattr(self, "_voice_cmd_lbl") and self._voice_cmd_lbl:
-            self._voice_cmd_lbl.setText({"Idle": '"Brahma Evo"', "Listening": '"Turn bedroom fan to speed 4"', "Thinking": '"Understanding..."', "Executing": '"Applying command..."', "Completed": '"Done"'}.get(self._voice_state, '"Brahma Evo"'))
+            self._voice_cmd_lbl.setText({"Idle": '"Sudarshana Chakra"', "Listening": '"Turn bedroom fan to speed 4"', "Thinking": '"Understanding..."', "Executing": '"Applying command..."', "Completed": '"Done"'}.get(self._voice_state, '"Sudarshana Chakra"'))
         if hasattr(self, "_mic_orb") and self._mic_orb:
             self._mic_orb.setText("🎙️" if self._voice_state in ("Listening", "Executing") else "🎙️")
 

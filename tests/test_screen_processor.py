@@ -49,7 +49,9 @@ def test_screen_process_uses_provided_image_bytes(monkeypatch):
     def fake_analyze(image_bytes, mime_type, user_text):
         assert image_bytes == b"provided"
         assert mime_type == "image/jpeg"
-        assert user_text == "look at my screen"
+        # The request text may be enriched with the active foreground-window
+        # context, but must always retain the user's original instruction.
+        assert user_text.startswith("look at my screen")
 
     monkeypatch.setattr(screen_processor, "_capture_screenshot", fake_capture_screenshot)
     monkeypatch.setattr(screen_processor._live, "analyze", fake_analyze)

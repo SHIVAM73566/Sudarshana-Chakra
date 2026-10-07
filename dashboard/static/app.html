@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Brahma Evo Remote</title>
+  <title>Sudarshana Evo Remote</title>
   <script src="/static/crypto.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -433,12 +433,12 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="logo"><em>Brahma Evo</em></div>
+        <div class="logo"><em>Sudarshana Evo</em></div>
         <div class="badge">Online</div>
       </div>
       <div class="nav">
         <div class="nav-item active">Dashboard</div>
-        <div class="nav-item">Brahma Evo Home</div>
+        <div class="nav-item">Sudarshana Evo Home</div>
         <div class="nav-item">Settings</div>
       </div>
       <div class="status-card">
@@ -457,10 +457,14 @@
     <section class="main-panel">
       <div class="topbar">
         <div>
-          <div class="page-title">Brahma Evo Home</div>
-          <div class="page-subtitle">Control your home with Brahma Evo.</div>
+          <div class="page-title">Sudarshana Evo Home</div>
+          <div class="page-subtitle">Control your home with Sudarshana Evo.</div>
         </div>
         <div class="top-actions">
+          <button id="vlock" class="badge" onclick="doVoiceLock()" title="Toggle voice biometric authorization"
+                  style="cursor:pointer;border:1px solid rgba(0,229,255,.45);background:rgba(0,229,255,.08);color:#9feaff;font:inherit;">
+            <span id="vst">BIOMETRIC: —</span>
+          </button>
           <div class="badge">Home Status</div>
           <div class="url">__IP__:__PORT__</div>
         </div>
@@ -561,11 +565,11 @@
             <div class="voice-header">
               <div>
                 <div class="section-title">Voice Control</div>
-                <div class="section-subtitle">Use Brahma Evo voice commands to control devices quickly.</div>
+                <div class="section-subtitle">Use Sudarshana Evo voice commands to control devices quickly.</div>
               </div>
               <div class="status-pill"><span class="dot"></span>Listening</div>
             </div>
-            <div class="voice-note">Say “Brahma Evo” followed by your command, or type it below.</div>
+            <div class="voice-note">Say “Sudarshana Evo” followed by your command, or type it below.</div>
             <div class="voice-actions">
               <button class="btn btn-secondary" onclick="doWake()">Wake</button>
               <button class="btn btn-send" onclick="doSend()">Send</button>
@@ -574,7 +578,7 @@
         </div>
       </div>
       <footer>
-        <input id="inp" placeholder="Send a command to Brahma Evo…" autocomplete="off">
+        <input id="inp" placeholder="Send a command to Sudarshana Evo…" autocomplete="off">
         <label class="btn-attach" for="file-inp" title="Send file">📎</label>
         <input type="file" id="file-inp" multiple accept="*/*" style="display:none">
         <button id="mic-btn" onclick="doMic()" title="Voice command">🎤</button>
@@ -586,8 +590,8 @@
 
   <script>
     // ── Auth — bearer token ───────────────────────────────────────────────────
-    const _authToken  = sessionStorage.getItem('brahma_token');
-    const _sessionKey = sessionStorage.getItem('brahma_key');
+    const _authToken  = sessionStorage.getItem('sudarshana_token');
+    const _sessionKey = sessionStorage.getItem('sudarshana_key');
 
     if (!_authToken) {
       location.replace('/login');
@@ -600,7 +604,7 @@
     }
 
     // ── Local session encryption (CryptoJS) ──────────────────────────────────
-    const _AES_SALT = 'BRAHMA EVO-DASHBOARD-v1';
+    const _AES_SALT = 'SUDARSHANA EVO-DASHBOARD-v1';
     let _aesKey = null;
 
     function _initCrypto(key) {
@@ -640,7 +644,7 @@
     const _wsUrl   = `${_wsProto}://${location.host}/ws?token=${encodeURIComponent(_authToken)}`;
     const ws       = new WebSocket(_wsUrl);
 
-    ws.onopen    = () => { sys('Remote session active.'); toast('Connected to Brahma Evo'); };
+    ws.onopen    = () => { sys('Remote session active.'); toast('Connected to Sudarshana Evo'); };
     ws.onclose   = () => sys('Connection lost — refresh to reconnect.');
     ws.onerror   = () => sys('Connection error.');
     ws.onmessage = (e) => {
@@ -662,9 +666,9 @@
 
     function append(speaker, text) {
       const d = document.createElement('div');
-      if (speaker === 'brahma evo') {
+      if (speaker === 'sudarshana evo') {
         d.className = 'msg msg-j';
-        d.innerHTML = `<div class="lbl">Brahma Evo</div>${esc(text)}`;
+        d.innerHTML = `<div class="lbl">Sudarshana Evo</div>${esc(text)}`;
       } else {
         d.className = 'msg msg-u';
         d.innerHTML = `<div class="lbl">You</div>${esc(text)}`;
@@ -984,6 +988,43 @@
       }
       _micIdle();
     }
+
+    // ── Voice biometric lock toggle ──────────────────────────────────────────
+    async function _refreshVoiceLock() {
+      try {
+        const r = await _authFetch('/api/voice-security/status');
+        if (!r.ok) return;
+        const s = await r.json();
+        const el  = document.getElementById('vst');
+        const btn = document.getElementById('vlock');
+        if (!el) return;
+        if (!s.enrolled)      el.textContent = 'BIOMETRIC: NOT ENROLLED';
+        else if (s.enabled)   el.textContent = 'LOCK STATE: SECURE 🔒';
+        else                  el.textContent = 'BIOMETRIC: OFF';
+        if (btn) btn.dataset.enabled = s.enabled ? '1' : '0';
+      } catch (_) {}
+    }
+
+    async function doVoiceLock() {
+      const btn = document.getElementById('vlock');
+      const enable = !(btn && btn.dataset.enabled === '1');
+      try {
+        const r = await _authFetch('/api/voice-security/toggle', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, _authHeader()),
+          body: JSON.stringify({ enabled: enable })
+        });
+        const s = await r.json();
+        if (!s.ok) toast(s.error || 'Unable to change voice lock');
+        else       toast(enable ? '🔒 Voice authorization enabled' : '🔓 Voice authorization disabled');
+      } catch (_) {
+        toast('Voice lock request failed');
+      }
+      _refreshVoiceLock();
+    }
+
+    document.addEventListener('DOMContentLoaded', _refreshVoiceLock);
+    setTimeout(_refreshVoiceLock, 800);
   </script>
 </body>
 </html>

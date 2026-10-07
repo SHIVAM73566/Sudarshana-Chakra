@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List
 
+from core.brand import BRAND_NAME
+
 def get_base_dir() -> Path:
     import sys
     if getattr(sys, "frozen", False):
@@ -22,8 +24,8 @@ class IdentityService:
                 "about": ""
             },
             "assistant": {
-                "name": "Brahma",
-                "application_name": "Brahma Evo",
+                "name": "Sudarshana",
+                "application_name": "Sudarshana Chakra",
                 "title": "Personal AI Assistant"
             },
             "behavior": {
@@ -54,6 +56,9 @@ class IdentityService:
         else:
             self.save()
 
+        # BRAND LOCK: the product brand is immutable; any on-disk value is ignored.
+        self.data.setdefault("assistant", {})["application_name"] = BRAND_NAME
+
     def save(self):
         try:
             self.config_file.parent.mkdir(parents=True, exist_ok=True)
@@ -64,20 +69,20 @@ class IdentityService:
 
     # Assistant methods
     def get_assistant_name(self) -> str:
-        val = self.data["assistant"].get("name", "Brahma")
-        return val if val is not None else "Brahma"
+        val = self.data["assistant"].get("name", "Sudarshana")
+        return val if val is not None else "Sudarshana"
         
     def set_assistant_name(self, name: str):
         self.data["assistant"]["name"] = name
         self.save()
 
     def get_application_name(self) -> str:
-        val = self.data["assistant"].get("application_name", "Brahma Evo")
-        return val if val is not None else "Brahma Evo"
-        
+        # Immutable brand: never sourced from config/env.
+        return BRAND_NAME
+
     def set_application_name(self, name: str):
-        self.data["assistant"]["application_name"] = name
-        self.save()
+        # Brand is immutable; ignore any attempt to rebrand the product.
+        self.data.setdefault("assistant", {})["application_name"] = BRAND_NAME
 
     def get_assistant_title(self) -> str:
         val = self.data["assistant"].get("title", "Personal AI Assistant")

@@ -1,6 +1,6 @@
 """
-Auto-Heal & Self-Patching Engine for Brahma AI
-Enables Brahma to detect its own bugs, tracebacks, and tool exceptions,
+Auto-Heal & Self-Patching Engine for Sudarshana AI
+Enables Sudarshana to detect its own bugs, tracebacks, and tool exceptions,
 synthesize minimal surgical hotfixes, verify syntax in an isolated sandbox,
 safely apply patches with atomic rollback guarantees, and record changelogs.
 """
@@ -393,8 +393,8 @@ Do NOT include markdown fences outside the JSON. Return only the valid JSON obje
         if gemini_key:
             try:
                 from google import genai
-                g_client = genai.Client(api_key=gemini_key, http_options={"api_version": "v1beta"})
-                for model_name in ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"):
+                g_client = genai.Client(api_key=gemini_key, http_options={"api_version": "v1beta", "timeout": 20000})
+                for model_name in ("gemini-3.8-flash", "gemini-3.6-flash", "gemini-flash-latest"):
                     try:
                         resp = g_client.models.generate_content(
                             model=model_name,
@@ -435,7 +435,7 @@ Do NOT include markdown fences outside the JSON. Return only the valid JSON obje
         # 3. Fallback: OpenRouter client
         try:
             import or_client
-            resp_text = or_client.chat(prompt, system="You are an expert Python auto-patching engineer. Return strict JSON.")
+            resp_text = or_client.client.chat(prompt, system="You are an expert Python auto-patching engineer. Return strict JSON.")
             clean_json = re.sub(r"^```[a-zA-Z]*\n?", "", resp_text.strip())
             clean_json = re.sub(r"\n?```$", "", clean_json).strip()
             data = json.loads(clean_json)

@@ -15,12 +15,12 @@ VSVersionInfo(
       StringTable(
         '040904B0',
         [StringStruct('CompanyName', 'User'),
-        StringStruct('FileDescription', 'Brahma Evo AI Assistant'),
+        StringStruct('FileDescription', 'Sudarshana Chakra AI Assistant'),
         StringStruct('FileVersion', '1.0.0'),
-        StringStruct('InternalName', 'BrahmaEvo'),
+        StringStruct('InternalName', 'SudarshanaChakra'),
         StringStruct('LegalCopyright', '© User. All rights reserved.'),
-        StringStruct('OriginalFilename', 'BrahmaEvo.exe'),
-        StringStruct('ProductName', 'Brahma Evo'),
+        StringStruct('OriginalFilename', 'SudarshanaChakra.exe'),
+        StringStruct('ProductName', 'Sudarshana Chakra'),
         StringStruct('ProductVersion', '1.0.0')])
       ]), 
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
