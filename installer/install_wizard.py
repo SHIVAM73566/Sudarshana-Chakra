@@ -200,7 +200,7 @@ class InstallWizard(QWidget):
         p1_layout.addWidget(desc)
         
         # Default Path
-        self.install_path = os.path.join(os.environ.get('LOCALAPPDATA', os.environ['USERPROFILE']), 'Sudarshana_Evo')
+        self.install_path = os.path.join(os.environ.get('LOCALAPPDATA', os.environ['USERPROFILE']), 'Sudarshana_Chakra')
         path_label = QLabel(f"Destination Folder: {self.install_path}")
         path_label.setFont(QFont("Segoe UI", 10))
         path_label.setStyleSheet("color: #aaa;")
