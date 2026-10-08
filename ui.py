@@ -1433,27 +1433,32 @@ def _quote_cmd_arg(path: str) -> str:
     return f'"{path}"'
 
 
+def _pythonw_candidate() -> Path | None:
+    for candidate in (
+        Path(sys.executable).with_name("pythonw.exe"),
+        BASE_DIR / ".venv" / "Scripts" / "pythonw.exe",
+    ):
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def _hidden_launch_args(*extra_args: str) -> list[str]:
-    pythonw = Path(r"C:\Users\ravit\AppData\Local\Programs\Python\Python313\pythonw.exe")
-    python = Path(sys.executable)
     main_py = BASE_DIR / "main.py"
     if getattr(sys, "frozen", False):
-        exe = Path(sys.executable)
-        return [str(exe), *extra_args]
-    if pythonw.exists():
+        return [str(Path(sys.executable)), *extra_args]
+    pythonw = _pythonw_candidate()
+    if pythonw is not None:
         return [str(pythonw), str(main_py), *extra_args]
-    return [str(python), str(main_py), *extra_args]
+    return [str(sys.executable), str(main_py), *extra_args]
+
 
 def _startup_run_value() -> str:
     if getattr(sys, "frozen", False):
-        exe = Path(sys.executable)
-        return f'{_quote_cmd_arg(str(exe))} --startup'
+        return f'{_quote_cmd_arg(str(Path(sys.executable)))} --startup'
     main_py = BASE_DIR / "main.py"
-    venv_pythonw = BASE_DIR / ".venv" / "Scripts" / "pythonw.exe"
-    pythonw = Path(r"C:\Users\ravit\AppData\Local\Programs\Python\Python313\pythonw.exe")
-    if venv_pythonw.exists():
-        return f'{_quote_cmd_arg(str(venv_pythonw))} {_quote_cmd_arg(str(main_py))} --startup'
-    if pythonw.exists():
+    pythonw = _pythonw_candidate()
+    if pythonw is not None:
         return f'{_quote_cmd_arg(str(pythonw))} {_quote_cmd_arg(str(main_py))} --startup'
     return f'{_quote_cmd_arg(sys.executable)} {_quote_cmd_arg(str(main_py))} --startup'
 
