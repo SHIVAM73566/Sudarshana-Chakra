@@ -301,7 +301,14 @@ if __name__ == '__main__':
                 pass
 
             if test_results is None:
-                test_results = [{"success": True, "output": output_str[:300]}]
+                # No structured result means the harness never completed its run
+                # (silent exit, module-level sys.exit, or stdout clobbered). Treat
+                # it as a failure so broken skills cannot slip through as "passed".
+                excerpt = (output_str.strip()[:400] or "(no output)")
+                return False, (
+                    "Sandbox produced no test results — the skill exited before finishing "
+                    f"its run. Output: {excerpt}"
+                ), {"results": None, "elapsed_s": elapsed, "stdout": excerpt}
 
             all_passed = all(t.get("success", False) for t in test_results)
             if not all_passed:

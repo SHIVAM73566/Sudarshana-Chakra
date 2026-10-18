@@ -52,6 +52,8 @@ FEATURE_METADATA = {
             },
         },
     },
+    "version": "1.0.0",
+    "active": True,
 }
 
 

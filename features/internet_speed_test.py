@@ -22,7 +22,9 @@ FEATURE_METADATA = {
     "parameters": {
         "type": "OBJECT",
         "properties": {}
-    }
+    },
+    "version": "1.0.0",
+    "active": True,
 }
 
 

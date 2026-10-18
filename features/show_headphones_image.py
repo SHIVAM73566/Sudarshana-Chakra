@@ -4,7 +4,7 @@ Description: Displays an image of headphones on the screen when requested.
 Autonomous Evolutionary Capability synthesized by Sudarshana AI.
 """
 
-FEATURE_METADATA = {'name': 'show_headphones_image', 'aliases': ['show headphones', 'display headphones', 'headphones image', 'showheadphonesimage'], 'description': 'Displays an image of headphones on the screen when requested.', 'triggers': ['show headphones', 'display headphones', 'headphones image', 'show a headphone img on screen when i ask "show headphones"', 'show headphones image'], 'parameters': {}, 'created_at': 1790774585.897451, 'version': '1.0.0', 'author': 'Project Ultron Autonomous Self-Evolution Engine', 'active': True}
+FEATURE_METADATA = {'name': 'show_headphones_image', 'aliases': ['show headphones', 'display headphones', 'headphones image', 'showheadphonesimage'], 'description': 'Displays an image of headphones on the screen when requested.', 'triggers': ['show headphones', 'display headphones', 'headphones image', 'show a headphone img on screen when i ask "show headphones"', 'show headphones image'], 'parameters': {'type': 'OBJECT', 'properties': {}}, 'created_at': 1790774585.897451, 'version': '1.0.0', 'author': 'Project Ultron Autonomous Self-Evolution Engine', 'active': True}
 
 import os
 import matplotlib

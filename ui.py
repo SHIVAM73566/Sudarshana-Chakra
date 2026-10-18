@@ -16,11 +16,14 @@ os.environ.setdefault(
 import platform
 import random
 import re
+import subprocess
 import sys
 import threading
 import time
+import traceback
 from collections import deque
 from pathlib import Path
+from typing import Any
 
 import psutil
 if platform.system() == "Windows":
@@ -289,7 +292,7 @@ class BackgroundWidget(QWidget):
             g = int(C.PRI[3:5], 16)
             b = int(C.PRI[5:7], 16)
             target_h, _, _ = colorsys.rgb_to_hls(r/255.0, g/255.0, b/255.0)
-        except:
+        except Exception:
             return html_content
             
         def map_hex(match):
@@ -302,7 +305,7 @@ class BackgroundWidget(QWidget):
                 _, or_l, or_s = colorsys.rgb_to_hls(or_r/255.0, or_g/255.0, or_b/255.0)
                 n_r, n_g, n_b = colorsys.hls_to_rgb(target_h, or_l, or_s)
                 return f"{prefix}{int(n_r*255):02x}{int(n_g*255):02x}{int(n_b*255):02x}"
-            except:
+            except Exception:
                 return old_hex
                 
         gold_hexes = [r"0xffbe1a", r"0xaa8010", r"0x040302", r"0x553f05", r"0xffea80", r"0xfff2a3", r"0xffe680", r"0xd4af37", r"0x3b2e0c"]
@@ -422,25 +425,46 @@ class BackgroundWidget(QWidget):
 class RemoteKeyOverlay(QWidget):
     closed = pyqtSignal()
 
-    def __init__(self, url: str, key: str, auto: str, manual: str, parent=None):
+    def __init__(self, url: str, key: str, auto: str, manual: str, pair_payload: str = "", pair_code: str = "",
+                 parent=None, device_name: str = "", phone: str = "", expires: int = 0):
         super().__init__(parent)
+        # Make this a standalone, always-on-top window so the QR is always
+        # visible even when the main window is minimised to the tray/background.
+        self.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setWindowTitle("Mobile Connect")
         self._on_new_key = None
         self._manual_url = manual or url
         self._auto_login_url = auto or url
-        self._expiry = time.time() + 600
+        self._pair_payload = pair_payload or ""
+        self._pair_code = pair_code or ""
+        self._device_name = device_name or ""
+        self._phone = phone or ""
+        # Pairing-only mode: no browser URL/key was supplied, so show just the
+        # Sudarshana Connect QR (used when the assistant creates a pairing offer).
+        self._pair_only = not (self._auto_login_url or key)
+        try:
+            _secs = int(expires or 0)
+        except Exception:
+            _secs = 0
+        self._expiry = time.time() + (_secs if _secs > 0 else 600)
 
         # modern glassmorphism panel
         frame = QFrame(self)
         frame.setObjectName("RemoteOverlayMainFrame")
         lay = QVBoxLayout(frame)
-        lay.setContentsMargins(32, 32, 32, 32)
-        lay.setSpacing(16)
+        lay.setContentsMargins(24, 24, 24, 24)
+        lay.setSpacing(12)
         
         try:
-            self.setFixedSize(560, 680)
+            self.setFixedSize(560, 900)
             frame.setFixedSize(self.size())
         except Exception:
-            self.setFixedSize(520, 640)
+            self.setFixedSize(520, 860)
             frame.setFixedSize(self.size())
             
         frame.setStyleSheet(f"""
@@ -461,33 +485,74 @@ class RemoteKeyOverlay(QWidget):
         except Exception:
             pass
 
-        title = QLabel("Mobile Connect")
+        title = QLabel("Pair Your Phone" if self._pair_only else "Mobile Connect")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
         title.setStyleSheet("color: #ffffff; background: transparent; border: none;")
         lay.addWidget(title)
 
-        subtitle = QLabel("Scan the QR code with your phone to remotely control Sudarshana Chakra.")
+        if self._pair_only:
+            detail = self._device_name or "Sudarshana Connect"
+            if self._phone:
+                detail += f"  •  {self._phone}"
+            subtitle = QLabel(
+                f"Device: {detail}\nScan this code in the Sudarshana Connect app on your phone to pair it."
+            )
+        else:
+            subtitle = QLabel("Scan the QR code with your phone to remotely control Sudarshana Chakra.")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setWordWrap(True)
         subtitle.setFont(QFont("Segoe UI", 9))
         subtitle.setStyleSheet(f"color: {C.TEXT_DIM}; border: none; margin-bottom: 10px;")
         lay.addWidget(subtitle)
 
+        browser_hint = QLabel("1. Phone browser — scan with your camera" if not self._pair_only
+                              else "Scan with the Sudarshana Connect app")
+        browser_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        browser_hint.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+        browser_hint.setStyleSheet(f"color: {C.TEXT_DIM}; border: none;")
+        self._browser_hint = browser_hint
+        lay.addWidget(browser_hint)
+
         self._qr_label = QLabel()
         self._qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._qr_label.setFixedSize(240, 240)
-        self._qr_label.setStyleSheet("background: white; border-radius: 12px; padding: 12px; border: none;")
+        self._qr_label.setFixedSize(170, 170)
+        self._qr_label.setStyleSheet("background: white; border-radius: 12px; padding: 10px; border: none;")
         qr_row = QHBoxLayout()
         qr_row.addStretch()
         qr_row.addWidget(self._qr_label)
         qr_row.addStretch()
         lay.addLayout(qr_row)
 
+        # Second QR: pairing payload for the Sudarshana Connect Android app.
+        self._pair_hint = QLabel("Sudarshana Connect app — scan to pair" if self._pair_only
+                                 else "2. Sudarshana Connect app — scan to pair")
+        self._pair_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._pair_hint.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+        self._pair_hint.setStyleSheet(f"color: {C.TEXT_DIM}; border: none; margin-top: 6px;")
+        lay.addWidget(self._pair_hint)
+
+        self._pair_qr_label = QLabel()
+        self._pair_qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._pair_qr_label.setFixedSize(170, 170)
+        self._pair_qr_label.setStyleSheet("background: white; border-radius: 12px; padding: 10px; border: none;")
+        pair_row = QHBoxLayout()
+        pair_row.addStretch()
+        pair_row.addWidget(self._pair_qr_label)
+        pair_row.addStretch()
+        lay.addLayout(pair_row)
+
+        self._pair_lbl = QLabel("")
+        self._pair_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._pair_lbl.setFont(QFont("Consolas", 12, QFont.Weight.Bold))
+        self._pair_lbl.setStyleSheet(f"color: #00e5ff; border: none;")
+        lay.addWidget(self._pair_lbl)
+
         manual_hint = QLabel("Manual address")
         manual_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         manual_hint.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
         manual_hint.setStyleSheet(f"color: {C.TEXT_DIM}; border: none; margin-top: 10px;")
+        self._manual_hint = manual_hint
         lay.addWidget(manual_hint)
 
         self._url_lbl = QLabel(self._manual_url)
@@ -564,10 +629,21 @@ class RemoteKeyOverlay(QWidget):
         
         lay.addLayout(btn_row)
 
+        if self._pair_only:
+            # Pairing-only window: drop the browser QR / URL / session key block.
+            for widget in (self._qr_label, self._manual_hint, self._url_lbl, self._key_lbl, self._new_btn):
+                try:
+                    widget.setVisible(False)
+                except Exception:
+                    pass
+            self._browser_hint.setVisible(False)
+
         self._ctimer = QTimer(self)
         self._ctimer.timeout.connect(self._tick)
         self._ctimer.start(1000)
-        self._update_qr(self._auto_login_url)
+        if not self._pair_only:
+            self._update_qr(self._auto_login_url)
+        self._update_pair_qr()
         self._tick()
 
         self.adjustSize()
@@ -579,33 +655,51 @@ class RemoteKeyOverlay(QWidget):
     def set_new_key_callback(self, fn) -> None:
         self._on_new_key = fn
 
-    def _update_qr(self, url: str) -> None:
-        if not url:
-            self._qr_label.setText("NO URL")
-            return
+    def _render_qr(self, label, data: str, size: int) -> bool:
+        """Render `data` as a QR pixmap onto `label`. Returns True on success."""
+        if not data:
+            label.setText("NO DATA")
+            return False
         try:
             import qrcode
             from io import BytesIO
             qr = qrcode.QRCode(box_size=5, border=2, error_correction=qrcode.constants.ERROR_CORRECT_M)
-            qr.add_data(url)
+            qr.add_data(data)
             qr.make(fit=True)
             img = qr.make_image(fill_color="black", back_color="white")
             buf = BytesIO()
             img.save(buf, format="PNG")
             pix = QPixmap()
             pix.loadFromData(buf.getvalue())
-            self._qr_label.setPixmap(pix.scaled(172, 172, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            label.setPixmap(pix.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            return True
         except ImportError:
-            self._qr_label.setText("Install\nqrcode[pil]")
-            self._qr_label.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-            self._qr_label.setStyleSheet("color: #111; background: white; border-radius: 12px; padding: 6px;")
+            label.setText("Install\nqrcode[pil]")
+            label.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+            label.setStyleSheet("color: #111; background: white; border-radius: 12px; padding: 6px;")
+            return False
         except Exception:
-            self._qr_label.setText("QR failed")
+            label.setText("QR failed")
+            return False
+
+    def _update_qr(self, url: str) -> None:
+        self._render_qr(self._qr_label, url, 142)
+
+    def _update_pair_qr(self) -> None:
+        ok = self._render_qr(self._pair_qr_label, self._pair_payload, 142)
+        if self._pair_code:
+            self._pair_lbl.setText(f"Pairing code: {self._pair_code}")
+        elif ok:
+            self._pair_lbl.setText("")
+        else:
+            self._pair_lbl.setText("Pairing QR unavailable")
+
 
     def _tick(self):
         remaining = max(0, int(self._expiry - time.time()))
         mins, secs = divmod(remaining, 60)
-        self._timer_lbl.setText(f"Key expires in {mins:02d}:{secs:02d}")
+        label = "Pairing code expires in " if self._pair_only else "Key expires in "
+        self._timer_lbl.setText(f"{label}{mins:02d}:{secs:02d}")
         if remaining <= 0:
             self._do_close()
 
@@ -623,6 +717,13 @@ class RemoteKeyOverlay(QWidget):
         self._qr_label.setText("OK")
         self._qr_label.setFont(QFont("Segoe UI", 34, QFont.Weight.Black))
         self._qr_label.setStyleSheet("color: #37ff5f; background: #041006; border-radius: 12px;")
+        try:
+            self._pair_qr_label.setText("OK")
+            self._pair_qr_label.setFont(QFont("Segoe UI", 34, QFont.Weight.Black))
+            self._pair_qr_label.setStyleSheet("color: #37ff5f; background: #041006; border-radius: 12px;")
+            self._pair_lbl.setText("")
+        except Exception:
+            pass
         self._timer_lbl.setText("Phone connected. Sudarshana Chakra remote is ready.")
 
     def _refresh_key(self):
@@ -635,6 +736,8 @@ class RemoteKeyOverlay(QWidget):
         key = result[1]
         auto = result[2] if len(result) >= 3 else url
         manual = result[3] if len(result) >= 4 else url
+        self._pair_payload = result[4] if len(result) >= 5 else ""
+        self._pair_code = result[5] if len(result) >= 6 else ""
         self._manual_url = manual or url
         self._auto_login_url = auto or url
         self._url_lbl.setText(self._manual_url)
@@ -648,6 +751,7 @@ class RemoteKeyOverlay(QWidget):
             letter-spacing: 9px;
         """)
         self._update_qr(self._auto_login_url)
+        self._update_pair_qr()
         self._expiry = time.time() + 600
         self._ctimer.start(1000)
         self._tick()
@@ -6675,7 +6779,7 @@ class SetupOverlay(QWidget):
                 with open(APP_SETTINGS_FILE, "w", encoding="utf-8") as f:
                     json.dump(settings, f, indent=4)
                 C.load_theme(hex_col)
-            except:
+            except Exception:
                 pass
                 
     def _finish_color_stage(self):
@@ -7201,6 +7305,9 @@ class ScanningOverlay(QWidget):
         
         if pixmap is not None:
             try:
+                import cv2
+                import numpy as np
+
                 # Convert QPixmap to CV2
                 qimg = pixmap.toImage().convertToFormat(QImage.Format.Format_RGB888)
                 width = qimg.width()
@@ -9301,7 +9408,7 @@ class MainWindow(QMainWindow):
                 boot = psutil.boot_time()
                 uptime_min = int((time.time() - boot) / 60)
                 self._uptime_lbl.setText(f"Up: {uptime_min // 60}h {uptime_min % 60}m")
-            except: pass
+            except Exception: pass
 
         if hasattr(self, "_stat_mem"):
             vm = psutil.virtual_memory()
@@ -9385,6 +9492,43 @@ class MainWindow(QMainWindow):
         )
         if path:
             self._on_file_selected(path)
+
+    def _on_file_selected(self, path: str):
+        """Register a file chosen from the attach dialog with the active conversation."""
+        if not path:
+            return
+        try:
+            p = Path(path)
+            name = p.name or str(path)
+            suffix = p.suffix.lstrip(".").upper() or "FILE"
+        except Exception:
+            name, suffix = str(path), "FILE"
+        attachment = {"path": str(path), "file": str(path), "name": name, "type": suffix}
+        try:
+            self._log.append_log(f"SYS: Attached {name} :: {path}")
+        except Exception:
+            pass
+        if self.on_chat_event:
+            try:
+                self.on_chat_event({
+                    "role": "user",
+                    "text": f"Attached file: {name}",
+                    "attachments": [attachment],
+                    "source": "local",
+                })
+            except Exception as exc:
+                try:
+                    self._log.append_log(f"ERR: Attachment record failed: {exc}")
+                except Exception:
+                    pass
+        try:
+            hint = f"Process the attached file: {path}"
+            current = (self._input.text() or "").strip()
+            if hint not in current:
+                self._input.setText(f"{current} {hint}".strip())
+            self._input.setFocus()
+        except Exception:
+            pass
 
     def _toggle_mute(self):
         self._muted = not self._muted
@@ -9795,6 +9939,8 @@ class MainWindow(QMainWindow):
         key = result[1]
         auto = result[2] if len(result) >= 3 else url
         manual = result[3] if len(result) >= 4 else url
+        pair_payload = result[4] if len(result) >= 5 else ""
+        pair_code = result[5] if len(result) >= 6 else ""
 
         if self._remote_overlay is not None:
             try:
@@ -9803,22 +9949,84 @@ class MainWindow(QMainWindow):
                 pass
             self._remote_overlay = None
 
-        overlay = RemoteKeyOverlay(url, key, auto, manual, parent=self)
+        overlay = RemoteKeyOverlay(url, key, auto, manual, pair_payload, pair_code)
         overlay.set_new_key_callback(self.on_remote_clicked)
         overlay.closed.connect(lambda: setattr(self, "_remote_overlay", None))
         self._remote_overlay = overlay
         self._position_remote_overlay()
         overlay.show()
         overlay.raise_()
+        overlay.activateWindow()
         self._log_sig.emit(f"SYS: Mobile Connect ready at {manual}. Scan the QR code or enter key {key}.")
 
     def _position_remote_overlay(self):
         if not self._remote_overlay:
             return
-        geo = self.geometry()
-        x = max(16, (geo.width() - self._remote_overlay.width()) // 2)
-        y = max(16, (geo.height() - self._remote_overlay.height()) // 2)
-        self._remote_overlay.move(x, y)
+        overlay = self._remote_overlay
+        geo = None
+        try:
+            screen = self.screen() or QApplication.primaryScreen()
+            if screen is not None:
+                geo = screen.availableGeometry()
+        except Exception:
+            geo = None
+        if geo is not None:
+            x = geo.x() + max(0, (geo.width() - overlay.width()) // 2)
+            y = geo.y() + max(0, (geo.height() - overlay.height()) // 2)
+        else:
+            win = self.geometry()
+            x = win.x() + max(16, (win.width() - overlay.width()) // 2)
+            y = win.y() + max(16, (win.height() - overlay.height()) // 2)
+        overlay.move(x, y)
+
+    def show_pairing_offer(self, offer, device_name: str = "", phone: str = "") -> bool:
+        """Opens the always-on-top QR window for a Sudarshana Connect pairing offer.
+
+        Called by the `connect_pair_device` action so a QR actually appears on
+        screen whenever the assistant creates (or the user asks for) a pairing code.
+        """
+        if isinstance(offer, str):
+            try:
+                offer = json.loads(offer)
+            except Exception:
+                offer = {}
+        if not isinstance(offer, dict) or not offer:
+            return False
+
+        payload = json.dumps(offer, sort_keys=True, ensure_ascii=False)
+        code = str(offer.get("pairing_code") or "").strip()
+        try:
+            expires = int(offer.get("expires") or 0)
+        except Exception:
+            expires = 0
+
+        if self._remote_overlay is not None:
+            try:
+                self._remote_overlay.deleteLater()
+            except Exception:
+                pass
+            self._remote_overlay = None
+
+        overlay = RemoteKeyOverlay(
+            "", "", "", "", payload, code, None,
+            device_name=device_name, phone=phone, expires=expires,
+        )
+        overlay.closed.connect(lambda: setattr(self, "_remote_overlay", None))
+        self._remote_overlay = overlay
+        self._position_remote_overlay()
+        overlay.show()
+        overlay.raise_()
+        overlay.activateWindow()
+
+        label = device_name or "your phone"
+        if phone:
+            label = f"{label} ({phone})"
+        msg = f"SYS: Pairing QR ready for {label}. Code: {code or 'n/a'}."
+        try:
+            self._log_sig.emit(msg)
+        except Exception:
+            pass
+        return True
 
     def notify_phone_connected(self):
         if self._remote_overlay is not None:
@@ -10542,7 +10750,7 @@ class SystemConnectivitySidebar(QFrame):
             shadow.setColor(QColor(0, 229, 255, 80))
             shadow.setOffset(0, 0)
             self.setGraphicsEffect(shadow)
-        except: pass
+        except Exception: pass
         lay = QVBoxLayout(self)
         lay.setContentsMargins(18, 18, 18, 18)
         lay.setSpacing(14)
@@ -11056,6 +11264,62 @@ class SystemConnectivityPage(QWidget):
 
         return spotify_card
 
+    def _build_hardware_card(self):
+        card = self._card(
+            "System & Hardware",
+            "Live CPU/RAM/battery vitals, display brightness, memory hogs and process management.",
+        )
+        lay = card.layout()
+
+        self._hw_vitals_lbl = QLabel("CPU: --% | RAM: --% | Battery: --% | Display: --%")
+        self._hw_vitals_lbl.setWordWrap(True)
+        self._hw_vitals_lbl.setStyleSheet(f"color: {C.WHITE};")
+        lay.addWidget(self._hw_vitals_lbl)
+
+        bright_row = QHBoxLayout()
+        bright_row.setSpacing(10)
+        bright_row.addWidget(QLabel("Brightness"))
+        self._hw_brightness_slider = QSlider(Qt.Orientation.Horizontal)
+        self._hw_brightness_slider.setRange(0, 100)
+        self._hw_brightness_slider.setValue(80)
+        self._hw_brightness_slider.valueChanged.connect(self._handle_hw_brightness_slider)
+        bright_row.addWidget(self._hw_brightness_slider, 1)
+        self._hw_brightness_val_lbl = QLabel("80%")
+        self._hw_brightness_val_lbl.setFixedWidth(48)
+        self._hw_brightness_val_lbl.setStyleSheet(f"color: {C.TEXT_DIM};")
+        bright_row.addWidget(self._hw_brightness_val_lbl)
+        lay.addLayout(bright_row)
+
+        diag_row = QHBoxLayout()
+        diag_row.setSpacing(10)
+        self._hw_vitals_btn = QPushButton("Refresh Vitals")
+        self._hw_vitals_btn.clicked.connect(self._refresh_hw_vitals)
+        diag_row.addWidget(self._hw_vitals_btn)
+        self._hw_ram_btn = QPushButton("RAM Hogs")
+        self._hw_ram_btn.clicked.connect(self._handle_hw_ram_hogs)
+        diag_row.addWidget(self._hw_ram_btn)
+        self._hw_battery_btn = QPushButton("Battery")
+        self._hw_battery_btn.clicked.connect(self._handle_hw_battery)
+        diag_row.addWidget(self._hw_battery_btn)
+        lay.addLayout(diag_row)
+
+        kill_row = QHBoxLayout()
+        kill_row.setSpacing(10)
+        kill_row.addWidget(QLabel("Kill Process"))
+        self._hw_kill_target = QLineEdit()
+        self._hw_kill_target.setPlaceholderText("application name or PID")
+        kill_row.addWidget(self._hw_kill_target, 1)
+        self._hw_kill_btn = QPushButton("Kill")
+        self._hw_kill_btn.clicked.connect(self._handle_hw_kill)
+        kill_row.addWidget(self._hw_kill_btn)
+        lay.addLayout(kill_row)
+
+        self._hw_output_lbl = QLabel("Hardware diagnostics ready.")
+        self._hw_output_lbl.setWordWrap(True)
+        self._hw_output_lbl.setStyleSheet(f"color: {C.TEXT_DIM};")
+        lay.addWidget(self._hw_output_lbl)
+        return card
+
     def _build_left_column(self):
         col = QWidget()
         lay = QVBoxLayout(col)
@@ -11198,6 +11462,9 @@ class SystemConnectivityPage(QWidget):
 
         # Spotify MCP Server
         lay.addWidget(self._build_spotify_mcp_card())
+
+        # System & Hardware (vitals, brightness, RAM hogs, battery, process kill)
+        lay.addWidget(self._build_hardware_card())
 
         # Identity & Profile
         identity_card = self._card("Identity & Profile", "Configure assistant identity, user profile, and behavior.")
@@ -11436,6 +11703,22 @@ class SystemConnectivityPage(QWidget):
         for lbl in (self._mobile_status, self._mobile_phone, self._mobile_last):
             lbl.setStyleSheet(f"color: {C.TEXT_MED};")
             ml.addWidget(lbl)
+        phone_row = QHBoxLayout()
+        phone_caption = QLabel("Mobile number")
+        phone_caption.setStyleSheet(f"color: {C.TEXT_MED};")
+        self._mobile_phone_edit = QLineEdit()
+        self._mobile_phone_edit.setPlaceholderText("Enter your full number, e.g. +91 98765 43210")
+        self._mobile_phone_edit.setMaxLength(32)
+        self._mobile_phone_edit.setText(str(self._load_app_settings().get("mobile_phone_number", "") or ""))
+        self._mobile_phone_edit.setStyleSheet(
+            f"QLineEdit {{ background: rgba(255,255,255,0.04); color: {C.WHITE}; "
+            f"border: 1px solid rgba(255,255,255,0.10); border-radius: 10px; padding: 8px 12px; }}"
+            f"QLineEdit:focus {{ border: 1px solid rgba(0,229,255,0.45); }}"
+        )
+        self._mobile_phone_edit.editingFinished.connect(self._save_mobile_phone_number)
+        phone_row.addWidget(phone_caption)
+        phone_row.addWidget(self._mobile_phone_edit, stretch=1)
+        ml.addLayout(phone_row)
         row = QHBoxLayout()
         self._mobile_connect_btn = QPushButton("Connect Device")
         self._mobile_connect_btn.clicked.connect(self._connect_mobile)
@@ -11509,7 +11792,7 @@ class SystemConnectivityPage(QWidget):
                 with open(APP_SETTINGS_FILE, "r", encoding="utf-8") as f:
                     _d = json.load(f)
                     current_theme = _d.get("app_theme", "Gold")
-        except:
+        except Exception:
             pass
             
         if current_theme.startswith("#"):
@@ -12725,6 +13008,18 @@ class SystemConnectivityPage(QWidget):
         if self._ctrl() and hasattr(self._ctrl(), "write_log"):
             self._ctrl().write_log(f"SYS: {msg}")
         self.refresh()
+
+    def _save_mobile_phone_number(self):
+        value = ""
+        try:
+            value = (self._mobile_phone_edit.text() or "").strip()
+        except Exception:
+            pass
+        self._set_setting("mobile_phone_number", value)
+        if self._ctrl() and hasattr(self._ctrl(), "write_log"):
+            self._ctrl().write_log(
+                f"SYS: Mobile number saved{' as ' + value if value else ' (cleared)'}."
+            )
 
     def _connect_mobile(self):
         ctrl = self._ctrl()

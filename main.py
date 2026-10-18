@@ -293,17 +293,32 @@ def _load_system_prompt() -> str:
         except Exception as e_rules:
             print(f"[LearnedRules] Error injecting rules into prompt: {e_rules}")
 
-        return identity_str + base_prompt
+        return identity_str + base_prompt + _persona_prompt_block()
     except Exception as e:
         print(f"Error injecting identity: {e}")
         try:
             from core.learned_rules import LearnedRulesEngine
             learned_directives = LearnedRulesEngine.get_prompt_injections()
             if learned_directives:
-                return f"{learned_directives}\n\n" + base_prompt
+                return f"{learned_directives}\n\n" + base_prompt + _persona_prompt_block()
         except Exception:
             pass
-        return base_prompt
+        return base_prompt + _persona_prompt_block()
+
+
+def _persona_prompt_block() -> str:
+    """Active professional persona (Enterprise Engine / CEO / Accountant / Office Staff ...).
+
+    Appended last so the active persona's role, engines and working memory take
+    precedence over the generic base prompt. Empty string when persona is 'off'.
+    """
+    try:
+        from core import persona as _persona_engine
+        block = _persona_engine.build_system_block()
+        return ("\n\n" + block) if block else ""
+    except Exception as e_persona:
+        print(f"[Persona] Error injecting persona into prompt: {e_persona}")
+        return ""
 
 
 def _speak_daily_briefing(ui=None, speak=None) -> None:
@@ -1224,14 +1239,18 @@ TOOL_DECLARATIONS = [
         "name": "connect_pair_device",
         "description": (
             "Creates or approves Sudarshana Connect pairing. Use to generate a QR code / pairing code for a new device, "
-            "or to approve a pending pairing request."
+            "or to approve a pending pairing request. Pass the user's phone number (phone_number) so the device is "
+            "labelled with it — this is what the user means when they 'give you their number'. The QR code is shown "
+            "on the desktop automatically. Do NOT ask for a pending id when creating a brand new pairing."
         ),
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "device_name": {"type": "STRING", "description": "Optional device name shown in the pairing flow"},
-                "platform": {"type": "STRING", "description": "android | windows | ios | tablet | other"},
-                "pending_id": {"type": "STRING", "description": "Pending request id to approve"},
+                "phone_number": {"type": "STRING", "description": "The user's full mobile number (any format, e.g. +91 98765 43210). Used to identify/label the phone."},
+                "phone": {"type": "STRING", "description": "Alias for phone_number."},
+                "platform": {"type": "STRING", "description": "android | windows | ios | tablet | other (defaults to android)"},
+                "pending_id": {"type": "STRING", "description": "Pending request id to approve (only when approving an existing request)"},
             },
             "required": []
         }
@@ -2214,6 +2233,20 @@ class SudarshanaLive:
             except Exception as e:
                 print(f"[Proactive] Error: {e}")
 
+    def _gateway_pairing_qr(self):
+        """Build a fresh Sudarshana Connect pairing payload (JSON) for the Android app QR."""
+        try:
+            from sudarshana_connect.service import get_service
+            svc = get_service(BASE_DIR)
+            if svc is None:
+                return "", ""
+            offer = svc.create_pairing_offer(device_name="Sudarshana Connect", platform="android")
+            payload = json.dumps(offer, sort_keys=True, ensure_ascii=False)
+            return payload, str(offer.get("pairing_code") or "")
+        except Exception as e:
+            print(f"[Mobile Connect] pairing QR unavailable: {e}")
+            return "", ""
+
     def _make_remote_key(self):
         if self._dashboard is None:
             self.ui.write_log("ERR: Mobile Connect unavailable. Install fastapi, uvicorn, cryptography, and qrcode[pil].")
@@ -2221,7 +2254,8 @@ class SudarshanaLive:
         key = self._dashboard.new_key()
         url = self._dashboard.get_url()
         manual = self._dashboard.get_manual_url()
-        return url, key, f"{url}/auto-login?key={key}", manual
+        pair_payload, pair_code = self._gateway_pairing_qr()
+        return url, key, f"{url}/auto-login?key={key}", manual, pair_payload, pair_code
 
     def _on_phone_connected(self):
         try:
@@ -3184,9 +3218,21 @@ class SudarshanaLive:
 
         if name == "connect_pair_device":
             pairing = data.get("pairing") or data
-            code = str(pairing.get("pairing_code") or "").strip()
+            code = str(pairing.get("pairing_code") or data.get("pairing_code") or "").strip()
+            device = str(data.get("device_name") or "").strip()
+            phone = str(data.get("phone_number") or "").strip()
+            label = device or "your phone"
+            if phone:
+                label = f"{label} ({phone})"
             if code:
-                return f"Pairing code ready: {code}."
+                qr_note = (
+                    " The QR code is now on screen — scan it with the Sudarshana Connect app."
+                    if data.get("qr_shown_on_desktop")
+                    else " Show the QR from Mobile Connect or scan it in the Sudarshana Connect app."
+                )
+                return f"Pairing code for {label}: {code}.{qr_note}"
+            if data.get("success", True):
+                return f"Pairing approved for {label}."
             return "Pairing is ready."
 
         if name == "connect_disconnect_device":

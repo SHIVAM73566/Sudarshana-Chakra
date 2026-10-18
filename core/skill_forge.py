@@ -50,61 +50,116 @@ class SkillForge:
         goal: str,
         skill_name: Optional[str] = None,
         context_hints: str = "",
-        max_repair_attempts: int = 2,
+        max_repair_attempts: int = 4,
     ) -> Dict[str, Any]:
         """
         Synthesizes a brand new skill from natural language, verifies it in the
         Crucible sandbox, auto-resolves pip packages, and hot-registers it.
+
+        Hardened: every failure is journaled by ForgeMemory, recurring failure
+        patterns are converted into lessons and injected back into the synthesizer
+        and repair prompts, and the repair loop is given the full error history so
+        it adapts instead of repeating the same broken approach.
         """
         logger.info(f"[Forge] Initiating skill synthesis for goal: '{goal}'")
 
         # Normalize skill name if provided
         name_hint = re.sub(r"[^a-zA-Z0-9_]", "_", (skill_name or "").lower()).strip("_")
 
-        # 1. Synthesize initial specification
-        synthesis = cls._call_llm_synthesizer(goal, name_hint, context_hints)
+        # Inject hard-won lessons + this goal's prior failure history (learning loop)
+        try:
+            from core import forge_memory as ForgeMemory  # type: ignore
+        except Exception:
+            ForgeMemory = None
+        memory_blocks = []
+        if ForgeMemory is not None:
+            try:
+                lessons = ForgeMemory.lessons_for(goal, limit=6)
+                if lessons:
+                    memory_blocks.append(lessons)
+                prior = ForgeMemory.failure_digest(goal, limit=4)
+                if prior:
+                    memory_blocks.append(prior)
+            except Exception as exc:
+                logger.warning(f"[Forge] lesson injection failed: {exc}")
+
+        effective_hints = "\n\n".join([b for b in [context_hints.strip(), *memory_blocks] if b]).strip()
+
+        def _fail(stage: str, message: str, attempts: int, code: str = "", telemetry: Any = None) -> Dict[str, Any]:
+            if ForgeMemory is not None:
+                try:
+                    ForgeMemory.record_failure(
+                        goal=goal, stage=stage, error=message, attempts=attempts,
+                        skill_name=skill_name or "", code=code, telemetry=telemetry,
+                    )
+                except Exception as exc:
+                    logger.warning(f"[Forge] failure journal write failed: {exc}")
+            return {"success": False, "stage": stage, "message": message, "attempts": attempts}
+
+        # 1. Synthesize initial specification (with adaptive retries on transient errors)
+        synthesis = cls._call_llm_synthesizer(goal, name_hint, effective_hints, retries=2)
         if not synthesis.get("success"):
-            return {
-                "success": False,
-                "message": f"Skill synthesis generation failed: {synthesis.get('error')}",
-            }
+            return _fail("synthesis", f"Skill synthesis generation failed: {synthesis.get('error')}", 1)
 
         manifest = synthesis["manifest"]
         code = synthesis["code"]
         test_cases = synthesis.get("test_cases", [{"input": {}}])
         actual_name = manifest.get("name", name_hint or "custom_skill")
+        error_history: list[str] = []
 
         # 2. Iterative Verification & Self-Repair Loop
-        for attempt in range(max_repair_attempts + 1):
-            logger.info(f"[Forge] Crucible verification attempt {attempt + 1}/{max_repair_attempts + 1} for '{actual_name}'")
+        total_passes = max_repair_attempts + 1
+        for attempt in range(total_passes):
+            logger.info(f"[Forge] Crucible verification attempt {attempt + 1}/{total_passes} for '{actual_name}'")
 
             # Stage A: AST Validation
             ast_ok, ast_err = SkillCrucible.validate_ast(code)
             if not ast_ok:
+                error_history.append(f"[AST] {ast_err}")
                 if attempt < max_repair_attempts:
                     logger.warning(f"[Forge] AST check failed ({ast_err}). Requesting repair from LLM...")
-                    repair = cls._repair_code(code, ast_err, goal)
+                    repair = cls._repair_code(code, ast_err, goal, history=error_history)
                     if repair.get("success"):
                         code = repair["code"]
                         continue
-                return {"success": False, "message": f"Crucible AST rejected skill: {ast_err}"}
+                return _fail("ast", f"Crucible AST rejected skill: {ast_err}", attempt + 1, code=code)
 
-            # Stage B: Dependency Auto-Resolver
+            # Stage B: Dependency Auto-Resolver — now repairable instead of fatal
             deps = SkillCrucible.extract_dependencies(code)
             deps_ok, deps_msg = SkillCrucible.resolve_dependencies(deps)
             if not deps_ok:
-                return {"success": False, "message": f"Dependency resolution failed: {deps_msg}"}
+                err = f"Dependency resolution failed: {deps_msg}"
+                error_history.append(f"[DEPS] {err}")
+                if attempt < max_repair_attempts:
+                    logger.warning(f"[Forge] {err}. Asking the LLM to remove/replace those imports...")
+                    repair = cls._repair_code(
+                        code,
+                        err + " Replace the missing/uninstallable imports with standard-library or already installed alternatives.",
+                        goal,
+                        history=error_history,
+                    )
+                    if repair.get("success"):
+                        code = repair["code"]
+                        continue
+                return _fail("dependencies", err, attempt + 1, code=code)
 
             # Stage C: Sandboxed Execution Tests
             test_ok, test_msg, test_telemetry = SkillCrucible.run_sandbox_test(code, test_cases)
             if not test_ok:
+                error_history.append(f"[SANDBOX] {test_msg}")
                 if attempt < max_repair_attempts:
                     logger.warning(f"[Forge] Sandbox tests failed ({test_msg}). Requesting repair from LLM...")
-                    repair = cls._repair_code(code, test_msg, goal)
+                    repair = cls._repair_code(code, test_msg, goal, history=error_history)
                     if repair.get("success"):
                         code = repair["code"]
                         continue
-                return {"success": False, "message": f"Crucible Sandbox tests failed: {test_msg}", "telemetry": test_telemetry}
+                return _fail(
+                    "sandbox",
+                    f"Crucible Sandbox tests failed: {test_msg}",
+                    attempt + 1,
+                    code=code,
+                    telemetry=test_telemetry,
+                )
 
             # All stages passed!
             break
@@ -189,6 +244,12 @@ class SkillForge:
             if not DynamicToolRegistry.has_tool(actual_name):
                 raise RuntimeError(f"Generated feature '{actual_name}' was not registered.")
 
+            if ForgeMemory is not None:
+                try:
+                    ForgeMemory.record_success(goal=goal, skill_name=actual_name, attempts=attempt + 1)
+                except Exception as exc:
+                    logger.warning(f"[Forge] success journal write failed: {exc}")
+
             return {
                 "success": True,
                 "name": actual_name,
@@ -198,7 +259,7 @@ class SkillForge:
                 "manifest": manifest,
             }
         except Exception as e:
-            return {"success": False, "message": f"Failed saving synthesized feature: {e}"}
+            return _fail("commit", f"Failed saving synthesized feature: {e}", total_passes, code=code)
 
     @classmethod
     def _parse_json_response(cls, text: str) -> Dict[str, Any]:
@@ -242,7 +303,24 @@ class SkillForge:
         raise ValueError("Could not extract a valid JSON object from LLM output.")
 
     @classmethod
-    def _call_llm_synthesizer(cls, goal: str, name_hint: str, context_hints: str) -> Dict[str, Any]:
+    def _call_llm_synthesizer(cls, goal: str, name_hint: str, context_hints: str, retries: int = 0) -> Dict[str, Any]:
+        """Synthesizes with adaptive retries so transient rate-limits never kill the forge."""
+        attempt = 0
+        delay = 1.5
+        last: Dict[str, Any] = {"success": False, "error": "synthesis not attempted"}
+        while attempt <= max(0, retries):
+            last = cls._synthesize_once(goal, name_hint, context_hints)
+            if last.get("success"):
+                return last
+            attempt += 1
+            if attempt <= retries:
+                logger.warning(f"[Forge] Synthesis attempt {attempt} failed ({last.get('error')}); retrying in {delay:.1f}s")
+                time.sleep(delay)
+                delay = min(delay * 2, 8.0)
+        return last
+
+    @classmethod
+    def _synthesize_once(cls, goal: str, name_hint: str, context_hints: str) -> Dict[str, Any]:
         """Prompts Gemini to generate the complete skill package JSON."""
         system_instructions = """You are the Sudarshana AI Autonomous Skill Architect ("Project Ultron").
 Your mission is to invent, architect, and write a complete, standalone, production-ready Python skill plugin.
@@ -354,13 +432,30 @@ Additional Context: {context_hints}
             return {"success": False, "error": f"LLM synthesis failed: {fallback_exc}"}
 
     @classmethod
-    def _repair_code(cls, broken_code: str, error_msg: str, goal: str) -> Dict[str, Any]:
-        """Asks LLM to fix syntax or sandbox runtime errors."""
+    def _repair_code(
+        cls,
+        broken_code: str,
+        error_msg: str,
+        goal: str,
+        history: Optional[list] = None,
+    ) -> Dict[str, Any]:
+        """Asks LLM to fix syntax or sandbox runtime errors.
+
+        `history` carries every error seen so far on this goal so the repair is
+        cumulative instead of forgetting what already failed.
+        """
+        history_block = ""
+        prior = [str(h) for h in (history or []) if str(h).strip()]
+        if prior:
+            history_block = "\nERROR HISTORY ON THIS SKILL (all previous attempts failed — change strategy, do not repeat these):\n"
+            history_block += "\n".join(f"{i}. {h[:400]}" for i, h in enumerate(prior[-6:], 1))
+            history_block += "\n"
+
         prompt = f"""You are repairing a Python skill generated for Sudarshana AI ("Project Ultron").
 The skill failed verification in the Crucible sandbox.
 User Goal: {goal}
 Verification Error: {error_msg}
-
+{history_block}
 Broken Code:
 ```python
 {broken_code}
@@ -373,7 +468,8 @@ Critical Repair Instructions:
 4. If downloading an image or media fails or has SSL errors, NEVER just return an error dictionary. Generate the image natively using PIL (Pillow) or matplotlib and save to `SudarshanaAI/deliverables/<name>.png`.
 5. Return a clean deliverable dictionary with `'image_path'`, `'title'`, `'summary'` if visual, or clean structured output.
 6. The test runner checks that the returned value does NOT contain an `'error'` key. Do not return `{{'error': '...'}}`. If an error occurs, provide a graceful fallback result.
-7. Return ONLY a JSON object:
+7. Use ONLY the Python standard library plus packages that are already installed (requests, pillow, numpy, matplotlib, bs4, lxml, psutil). Do not import exotic third-party packages.
+8. Return ONLY a JSON object:
 {{
     "code": "Fully corrected, runnable Python code"
 }}

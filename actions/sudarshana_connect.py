@@ -217,6 +217,77 @@ def connect_get_capabilities(parameters: dict[str, Any] | None = None, player=No
         return _fail(str(exc), "GATEWAY_UNAVAILABLE", device=target, action="connect_get_capabilities")
 
 
+_PHONE_ALIASES = (
+    "phone_number", "phoneNo", "phone_no", "phone", "mobile_number", "mobile_no",
+    "mobile", "contact_number", "number", "msisdn",
+)
+
+
+def _normalize_phone(value: Any) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if len(digits) < 6:
+        return ""
+    return raw
+
+
+def _phone_from_params(params: dict[str, Any]) -> str:
+    for key in _PHONE_ALIASES:
+        if key in params:
+            found = _normalize_phone(params.get(key))
+            if found:
+                return found
+    return ""
+
+
+def _saved_phone_number() -> str:
+    """Falls back to the mobile number saved in Settings → Mobile Connect."""
+    try:
+        from core.user_paths import get_user_data_dir
+
+        path = get_user_data_dir() / "config" / "app_settings.json"
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return _normalize_phone(data.get("mobile_phone_number"))
+    except Exception:
+        pass
+    return ""
+
+
+def _show_pairing_qr(player: Any, offer: dict[str, Any], device_name: str, phone: str) -> bool:
+    """Opens the on-screen pairing QR window. Best effort — never raises."""
+    if not offer:
+        return False
+    candidates: list[Any] = [player]
+    for obj in list(candidates):
+        if obj is None:
+            continue
+        for attr in ("_win", "_ctrl", "ui", "_ui"):
+            child = getattr(obj, attr, None)
+            if child is not None:
+                candidates.append(child)
+    seen: set[int] = set()
+    for cand in candidates:
+        if cand is None or id(cand) in seen:
+            continue
+        seen.add(id(cand))
+        fn = getattr(cand, "show_pairing_offer", None)
+        if callable(fn):
+            try:
+                return bool(fn(offer, device_name, phone))
+            except TypeError:
+                try:
+                    return bool(fn(offer, device_name=device_name, phone=phone))
+                except Exception:
+                    return False
+            except Exception:
+                return False
+    return False
+
+
 def connect_pair_device(parameters: dict[str, Any] | None = None, player=None, speak=None) -> str:
     params = parameters or {}
     try:
@@ -226,13 +297,44 @@ def connect_pair_device(parameters: dict[str, Any] | None = None, player=None, s
             result = asyncio.run(service.approve_pending_request(pending_id))
             return _dump(result)
 
-        device_name = str(params.get("device_name") or params.get("name") or "Unknown Device").strip()
-        platform = str(params.get("platform") or "unknown").strip()
+        phone = _phone_from_params(params) or _saved_phone_number()
+
+        device_name = str(params.get("device_name") or params.get("name") or "").strip()
+        if not device_name:
+            device_name = f"Phone {phone}" if phone else "Unknown Device"
+        elif phone and phone not in device_name:
+            device_name = f"{device_name} ({phone})"
+
+        platform = str(params.get("platform") or "").strip().lower()
+        if platform not in {"android", "windows", "ios", "tablet", "other", "gateway"}:
+            platform = "android"
+
         offer = service.create_pairing_offer(device_name=device_name, platform=platform)
+        if not isinstance(offer, dict):
+            offer = {}
+
+        shown = _show_pairing_qr(player, offer, device_name, phone)
+        code = str(offer.get("pairing_code") or "").strip()
+        qr_payload = json.dumps(offer, sort_keys=True, ensure_ascii=False)
+
         return _dump({
             "success": True,
             "pairing": offer,
-            "message": "Share the pairing code or QR payload with the device agent.",
+            "qr_payload": qr_payload,
+            "pairing_code": code,
+            "device_name": device_name,
+            "phone_number": phone,
+            "qr_shown_on_desktop": shown,
+            "message": (
+                f"Pairing code {code} created for {device_name}. "
+                + (
+                    "The QR code is now displayed on the desktop — ask the user to scan it "
+                    "with the Sudarshana Connect app on their phone."
+                    if shown else
+                    "Share this QR payload or pairing code with the Sudarshana Connect app "
+                    "on the phone, or tell the user to press Mobile Connect to see the QR."
+                )
+            ),
         })
     except Exception as exc:
         return _fail(str(exc), "GATEWAY_UNAVAILABLE", action="connect_pair_device")

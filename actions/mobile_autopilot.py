@@ -63,7 +63,7 @@ def mobile_autopilot(parameters: dict, response=None, player=None, session_memor
         })
         try:
             dump_res = json.loads(dump_res_str)
-        except:
+        except Exception:
             return json.dumps({"success": False, "error": "Failed to parse UI dump."})
             
         if not dump_res.get("success"):

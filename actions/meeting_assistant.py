@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import threading
 import time
 import wave
@@ -143,6 +144,28 @@ def _audio_input_source() -> dict:
     return {}
 
 
+_PLATFORM_HOSTS = (
+    ("zoom", "Zoom"),
+    ("teams.microsoft", "Microsoft Teams"),
+    ("meet.google", "Google Meet"),
+    ("web.whatsapp", "WhatsApp"),
+    ("whatsapp", "WhatsApp"),
+    ("discord", "Discord"),
+    ("skype", "Skype"),
+    ("webex", "Webex"),
+    ("gotomeeting", "GoToMeeting"),
+    ("whereby", "Whereby"),
+)
+
+
+def _guess_platform(url: str) -> str:
+    low = (url or "").lower()
+    for needle, label in _PLATFORM_HOSTS:
+        if needle in low:
+            return label
+    return ""
+
+
 def _clean_response(text: str) -> tuple[str, str]:
     lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
     if not lines:
@@ -163,6 +186,19 @@ def _clean_response(text: str) -> tuple[str, str]:
 
 
 class MeetingAssistant:
+    _active_instance: "MeetingAssistant | None" = None
+
+    @classmethod
+    def get_active(cls) -> "MeetingAssistant | None":
+        return cls._active_instance
+
+    @classmethod
+    def ensure(cls) -> "MeetingAssistant":
+        inst = cls._active_instance
+        if inst is None:
+            inst = cls()
+        return inst
+
     def __init__(
         self,
         on_update: Callable[[dict], None] | None = None,
@@ -187,12 +223,40 @@ class MeetingAssistant:
         self._audio_buf = bytearray()
         self._audio_source = {}
         self._speech_gen = 0
+        self._transcript: list[dict] = []
+        self._started_at = 0.0
+        self._platform = ""
+        self._join_url = ""
+        self._report: dict | None = None
+        self._report_lock = threading.Lock()
+        MeetingAssistant._active_instance = self
+
+    def join(self, url: str, platform: str = "") -> str:
+        """Open a meeting link in the persistent browser session and wait for it to load."""
+        if not url:
+            return "No meeting link provided."
+        if not re.match(r"^https?://", url.strip(), re.I):
+            url = "https://" + url.strip()
+        self._join_url = url.strip()
+        self._platform = (platform or _guess_platform(url)).strip()
+        try:
+            from actions.browser_control import browser_control
+            result = browser_control({"action": "go_to", "url": self._join_url})
+        except Exception as exc:
+            return f"Could not open the meeting link: {exc}"
+        self.start(title=self._title if self._title != "Meeting mode" else f"{self._platform} meeting".strip(),
+                   context=f"Joined via browser: {self._join_url}")
+        return f"Opened {self._platform or 'the'} meeting in the browser: {self._join_url}. {result}"
 
     def start(self, *, title: str = "Meeting mode", context: str = "") -> None:
+        if self._running:
+            self.update_context(title or None, context if context is not None else None)
+            return
         self._title = title or "Meeting mode"
         self._context = context or ""
-        if self._running:
-            return
+        self._transcript = []
+        self._report = None
+        self._started_at = time.time()
         self._running = True
         self._stop_event.clear()
         self._audio_stop.clear()
@@ -220,6 +284,28 @@ class MeetingAssistant:
 
     def latest_speech(self) -> str:
         return self._last_speech
+
+    def is_running(self) -> bool:
+        return bool(self._running)
+
+    def transcript_text(self, limit: int = 400) -> str:
+        lines = [
+            f"[{time.strftime('%H:%M:%S', time.localtime(t))}] {text}"
+            for t, text in self._transcript[-limit:]
+        ]
+        return "\n".join(lines)
+
+    def transcript(self) -> list[dict]:
+        return list(self._transcript)
+
+    def _record_speech(self, speech: str) -> None:
+        if not speech:
+            return
+        if self._transcript and self._transcript[-1][1] == speech:
+            return
+        self._transcript.append({"t": time.time(), "text": speech})
+        if len(self._transcript) > 4000:
+            del self._transcript[:1000]
 
     def _transcribe_audio(self, client, wav_bytes: bytes) -> str:
         prompt = (
@@ -315,6 +401,7 @@ class MeetingAssistant:
                             self._last_audio_hash = digest
                             self._last_speech = speech
                             self._speech_gen += 1
+                            self._record_speech(speech)
                             payload = {
                                 "active": True,
                                 "title": self._title,
@@ -409,3 +496,174 @@ Answer: ...
                         "status": "error",
                     })
             time.sleep(self._interval)
+
+    def generate_report(self, save: bool = True) -> dict:
+        """Summarize the meeting transcript into action items, decisions and next steps."""
+        with self._report_lock:
+            if self._report is not None:
+                return self._report
+
+            transcript = self.transcript_text(limit=400)
+            started = self._started_at or time.time()
+            duration = max(0, int(time.time() - started))
+            minutes, seconds = divmod(duration, 60)
+            duration_str = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
+
+            report = {
+                "title": self._title,
+                "platform": self._platform or "Unknown",
+                "url": self._join_url,
+                "started_at": started,
+                "duration": duration_str,
+                "lines_captured": len(self._transcript),
+                "summary": "No speech was captured during this meeting.",
+                "action_items": [],
+                "decisions": [],
+                "questions": [],
+                "risks": [],
+                "next_steps": [],
+                "path": "",
+            }
+
+            if not transcript:
+                self._report = report
+                return report
+
+            try:
+                client = genai.Client(
+                    api_key=_get_api_key(),
+                    http_options={"api_version": "v1beta"},
+                )
+            except Exception as exc:
+                report["summary"] = f"Could not build the meeting report: {exc}"
+                self._report = report
+                return report
+
+            prompt = f"""You are the meeting assistant for Sudarshana Chakra.
+Below is the live transcript of a meeting. Produce a precise executive briefing.
+
+Meeting title: {self._title}
+Platform: {report['platform']}
+Duration: {duration_str}
+Extra context: {self._context}
+
+TRANSCRIPT:
+{transcript}
+
+Return ONLY valid JSON, no markdown, no commentary:
+{{
+  "summary": "3-4 sentence executive summary of what was discussed and the outcome",
+  "action_items": [{{"task": "specific action", "owner": "who", "due": "when or empty"}}],
+  "decisions": ["decision that was made"],
+  "questions": ["open question still unresolved"],
+  "risks": ["risk or blocker mentioned"],
+  "next_steps": ["ordered next step"]
+}}
+Rules: action_items must be concrete and assigned. Keep each list short (max 8). Empty list is fine when nothing applies."""
+
+            try:
+                response = client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=prompt,
+                    config={"temperature": 0.2, "response_mime_type": "application/json"},
+                )
+                raw = _extract_text(response)
+                data = _parse_json_object(raw)
+                if not data:
+                    raise ValueError("model returned no parseable JSON")
+                report["summary"] = str(data.get("summary") or report["summary"]).strip()
+                for key in ("action_items", "decisions", "questions", "risks", "next_steps"):
+                    value = data.get(key)
+                    if isinstance(value, list):
+                        report[key] = [
+                            (v if isinstance(v, str) else json.dumps(v, ensure_ascii=False))
+                            for v in value
+                            if str(v).strip()
+                        ][:8]
+            except Exception as exc:
+                report["summary"] = f"Report generation failed: {exc}"
+
+            if save:
+                try:
+                    report["path"] = _save_report_markdown(report, transcript)
+                except Exception as exc:
+                    print(f"[MeetingAssistant] report save failed: {exc}")
+
+            self._report = report
+            return report
+
+
+def _parse_json_object(raw: str) -> dict | None:
+    text = (raw or "").strip()
+    if not text:
+        return None
+    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.I).strip()
+    try:
+        obj = json.loads(text)
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        pass
+    try:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            obj = json.loads(text[start:end + 1])
+            return obj if isinstance(obj, dict) else None
+    except Exception:
+        pass
+    return None
+
+
+def _save_report_markdown(report: dict, transcript: str) -> str:
+    out_dir = get_user_data_dir() / "deliverables" / "meeting_reports"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(report.get("started_at") or time.time()))
+    safe_title = re.sub(r"[^a-zA-Z0-9]+", "_", report.get("title") or "meeting").strip("_")[:40] or "meeting"
+    path = out_dir / f"{safe_title}_{stamp}.md"
+
+    def _bullet(items) -> list[str]:
+        if not items:
+            return ["- None"]
+        return [f"- {i}" for i in items]
+
+    lines = [
+        f"# {report.get('title') or 'Meeting Report'}",
+        "",
+        f"- **Platform:** {report.get('platform')}",
+        f"- **Link:** {report.get('url') or 'n/a'}",
+        f"- **Duration:** {report.get('duration')}",
+        f"- **Captured lines:** {report.get('lines_captured')}",
+        "",
+        "## Summary",
+        "",
+        str(report.get("summary") or ""),
+        "",
+        "## Action Items",
+        "",
+        *_bullet(report.get("action_items")),
+        "",
+        "## Decisions",
+        "",
+        *_bullet(report.get("decisions")),
+        "",
+        "## Open Questions",
+        "",
+        *_bullet(report.get("questions")),
+        "",
+        "## Risks",
+        "",
+        *_bullet(report.get("risks")),
+        "",
+        "## Next Steps",
+        "",
+        *_bullet(report.get("next_steps")),
+        "",
+        "## Transcript",
+        "",
+        "```",
+        transcript,
+        "```",
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return str(path)

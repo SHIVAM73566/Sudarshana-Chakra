@@ -37,6 +37,7 @@ scratch/
 *.log
 
 # Browser & runtime cache / backups
+.playwright-mcp/
 config/ig_browser_profile/
 config/patch_backups/
 config/ppt_template_cache/

@@ -201,11 +201,11 @@ def execute(**kwargs):
             else:
                 # Fallback to a static stickman if no frames generated yet
                 frames_data.append([
-                    head_center, neck_pos, torso_top_pos, torso_bottom_pos,
-                    torso_top_pos + np.array([-0.2, 0.1]), torso_top_pos + np.array([-0.2, 0.1]), torso_top_pos + np.array([-0.4, -0.1]),
-                    torso_top_pos + np.array([0.2, 0.1]), torso_top_pos + np.array([0.2, 0.1]), torso_top_pos + np.array([0.4, -0.1]),
-                    torso_bottom_pos + np.array([-0.1, 0]), torso_bottom_pos + np.array([-0.1, -0.4]), torso_bottom_pos + np.array([-0.1, -0.8]),
-                    torso_bottom_pos + np.array([0.1, 0]), torso_bottom_pos + np.array([0.1, -0.4]), torso_bottom_pos + np.array([0.1, -0.8])
+                    head_center, neck_pos, torso_top, torso_bottom,
+                    torso_top + np.array([-0.2, 0.1]), torso_top + np.array([-0.2, 0.1]), torso_top + np.array([-0.4, -0.1]),
+                    torso_top + np.array([0.2, 0.1]), torso_top + np.array([0.2, 0.1]), torso_top + np.array([0.4, -0.1]),
+                    torso_bottom + np.array([-0.1, 0]), torso_bottom + np.array([-0.1, -0.4]), torso_bottom + np.array([-0.1, -0.8]),
+                    torso_bottom + np.array([0.1, 0]), torso_bottom + np.array([0.1, -0.4]), torso_bottom + np.array([0.1, -0.8])
                 ])
 
     # Update function for animation

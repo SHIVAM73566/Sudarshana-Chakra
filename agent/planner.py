@@ -244,7 +244,34 @@ mobile_autopilot
   target: string (optional) — phone device name
   Use whenever user asks to do complex multi-step workflows on their phone (e.g., "open Instagram and message X", "play jazz on youtube on my phone").
 
+connect_pair_device
+  phone_number: string (optional) — the user's full mobile number, used to label/identify the phone
+  device_name: string (optional)
+  pending_id: string (only when approving an existing pending request)
+  Use whenever the user wants to pair/connect their phone, gives you a phone number to connect with, or asks for a QR code / pairing code. The QR code is shown on screen automatically. Never ask for a pending_id when creating a new pairing.
+
+connect_list_devices
+  Use to list paired devices. No parameters.
+
+connect_get_device
+  device: string (required) — device name, id, or natural reference such as "my phone"
+
+connect_execute
+  device: string (required), action: string (required), parameters: object
+  Run a command on a paired device (launch_app, open_url, clipboard_set, send_file, volume_set, get_battery, ...).
+
+connect_get_capabilities
+  device: string (required)
+
+connect_disconnect_device
+  device: string (required)
+
 EXAMPLES:
+
+Goal: "Mobile connect my phone, I am giving you the number 9876543210"
+Steps:
+
+connect_pair_device | phone_number: "9876543210", device_name: "Phone 9876543210"
 
 Goal: "research mechanical engineering and save it to a notepad file"
 Steps:

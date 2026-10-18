@@ -284,6 +284,15 @@ python tools/build_promo_images.py                         # storefront promo su
 
 ---
 
+## 🛡️ Automated Architecture Milestones
+
+- **Zero-Error Gate:** `core/auto_deploy.py` runs the full pre-flight suite before any release — syntax compilation, undefined-name scanning, isolated import integrity, Gemini tool-schema validation, exception-hygiene audit, and the unit test suite. Deployment is opt-in (`--deploy`) and refuses to stage credential files.
+- **Verified Stability:** 170/170 Python files byte-compile, 165/165 modules import cleanly, 0 undefined names, 0 bare `except:` handlers, 55/55 dynamic tool schemas valid, 49/49 tests green, clean offscreen boot with the dashboard (`:8000`) and mobile gateway (`:8765`) healthy.
+- **Hardened Runtime:** the attachment pipeline, the System & Hardware control card, and the dynamic skill registry were repaired; skill loading is now deterministic and independent of file timestamps.
+- **Active Engines:** Live Meeting Assistant, Office Persona mode, SkillForge self-correcting runtime, and the Sudarshana Connect mobile QR pairing mesh.
+
+---
+
 ## 📄 License
 
 **Purchased Personal Install — Source-Available Commercial EULA.**

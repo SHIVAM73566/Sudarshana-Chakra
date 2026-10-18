@@ -218,6 +218,9 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
         "screen_process": "Inspecting display...",
         "office_builder": "Synthesizing presentation...",
         "system_diagnostics": "Checking system diagnostics...",
+        "connect_pair_device": "Creating pairing QR code...",
+        "connect_list_devices": "Listing connected devices...",
+        "connect_execute": "Sending command to device...",
     }.get(tool, f"Running {tool}...")
 
     if player and hasattr(player, "ui"):
@@ -277,6 +280,21 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
     elif tool in ("mobile_autopilot", "android_autopilot"):
         from actions.mobile_autopilot import mobile_autopilot
         return mobile_autopilot(parameters=parameters, player=player) or "Done."
+
+    elif tool.startswith("connect_"):
+        from actions import sudarshana_connect as sc
+        p = dict(parameters or {})
+        fn = {
+            "connect_pair_device": sc.connect_pair_device,
+            "connect_list_devices": sc.connect_list_devices,
+            "connect_get_device": sc.connect_get_device,
+            "connect_get_capabilities": sc.connect_get_capabilities,
+            "connect_execute": sc.connect_execute,
+            "connect_disconnect_device": sc.connect_disconnect_device,
+        }.get(tool)
+        if fn is None:
+            return f"Unknown connect tool '{tool}'."
+        return fn(parameters=p, player=player, speak=speak) or "Done."
 
     elif tool == "send_message":
         from actions.send_message import send_message

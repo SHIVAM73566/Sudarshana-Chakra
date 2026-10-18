@@ -34,6 +34,24 @@ APPDATA_SKILLS_DIR = get_user_data_dir() / "skills"
 class DynamicSkill:
     """Represents a loaded, runnable feature or synthetic skill in Sudarshana AI."""
 
+    _EMPTY_SCHEMA: Dict[str, Any] = {"type": "OBJECT", "properties": {}}
+
+    @classmethod
+    def _normalize_parameters(cls, params: Any) -> Dict[str, Any]:
+        """Guarantees a valid Gemini-compatible parameter schema.
+
+        A malformed manifest (e.g. ``"parameters": {}``) would otherwise be forwarded
+        verbatim into ``LiveConnectConfig`` and reject the entire tool declaration
+        list, killing the voice session instead of a single skill.
+        """
+        if not isinstance(params, dict):
+            return {"type": "OBJECT", "properties": {}}
+        schema = dict(params)
+        schema["type"] = schema.get("type") or "OBJECT"
+        if not isinstance(schema.get("properties"), dict):
+            schema["properties"] = {}
+        return schema
+
     def __init__(self, skill_path: Path, manifest: Dict[str, Any], module: Any = None):
         self.skill_path = skill_path
         self.skill_dir = skill_path if skill_path.is_dir() else skill_path.parent
@@ -41,7 +59,7 @@ class DynamicSkill:
         self.module = module
         self.name: str = manifest.get("name", skill_path.stem)
         self.description: str = manifest.get("description", "")
-        self.parameters: Dict[str, Any] = manifest.get("parameters", {"type": "OBJECT", "properties": {}})
+        self.parameters: Dict[str, Any] = self._normalize_parameters(manifest.get("parameters"))
         self.triggers: List[str] = manifest.get("triggers", [])
         self.aliases: List[str] = manifest.get("aliases", [])
         self.active: bool = manifest.get("active", True)
@@ -95,6 +113,15 @@ class DynamicSkill:
             return await func(**kwargs)
         else:
             return await asyncio.to_thread(func, **kwargs)
+
+
+def _journal_runtime_error(name: str, error: BaseException) -> None:
+    """Feeds runtime crashes into the SkillForge learning journal (best effort)."""
+    try:
+        from core import forge_memory as fm
+        fm.record_runtime_error(skill_name=name, error=f"{type(error).__name__}: {error}")
+    except Exception:
+        pass
 
 
 class DynamicToolRegistry:
@@ -160,6 +187,16 @@ class DynamicToolRegistry:
 
             # Case B: Feature directory with manifest.json & skill.py
             elif item.is_dir():
+                # A flat module of the same name (e.g. features/show_gif.py) always
+                # shadows this package at import time and would otherwise win the
+                # name slot only when its mtime happens to be newer. Prefer the flat
+                # module deterministically so behaviour never depends on timestamps.
+                if item.with_suffix(".py").exists():
+                    logger.info(
+                        f"[Registry] Skipping package '{item.name}': flat module "
+                        f"'{item.name}.py' takes precedence."
+                    )
+                    continue
                 manifest_file = item / "manifest.json"
                 code_file = item / "skill.py"
                 if manifest_file.exists() and code_file.exists():
@@ -455,6 +492,7 @@ class DynamicToolRegistry:
         except Exception as e:
             skill.last_error = str(e)
             logger.error(f"[Registry] Execution error in feature '{name}': {e}", exc_info=True)
+            _journal_runtime_error(name, e)
             try:
                 import traceback
                 from actions.auto_heal_engine import AutoHealEngine
@@ -476,6 +514,7 @@ class DynamicToolRegistry:
         except Exception as e:
             skill.last_error = str(e)
             logger.error(f"[Registry] Execution error in skill '{name}': {e}", exc_info=True)
+            _journal_runtime_error(name, e)
             # Route to auto heal engine if available
             try:
                 import traceback
