@@ -251,6 +251,12 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
     elif tool == "game_updater":
         from actions.game_updater import game_updater
         return game_updater(parameters=parameters, player=player, speak=speak) or "Done."
+    elif tool in ("job_hunter", "job_hunter_agent", "recruiter"):
+        from services.job_hunter import job_hunter as job_hunter_action
+        return job_hunter_action(parameters=parameters, player=player) or "Done."
+    elif tool in ("browser_worker", "persistent_browser", "cdp_browser"):
+        from services.browser_worker import browser_worker as browser_worker_action
+        return browser_worker_action(parameters=parameters, player=player) or "Done."
     elif tool == "browser_control" or tool.startswith("browser_"):
         from actions.browser_control import browser_control
         p = dict(parameters or {})

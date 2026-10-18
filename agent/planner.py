@@ -80,6 +80,31 @@ browser_control
   expression: string (for evaluate, JavaScript expression)
   path: string (for screenshot / upload)
 
+job_hunter
+  action: "profile" | "search" | "cover_letter" | "apply" | "report" | "list" | "status" (required)
+  resume_path: string (for action=profile — .pdf/.docx/.txt/.md)
+  query: string (role/title to search, e.g. "senior python engineer")
+  location: string (e.g. "remote", "bangalore")
+  boards: string (comma-separated: linkedin, indeed, naukri, wellfound, google)
+  limit: integer (max postings, default 25)
+  min_score: integer (0-100 match-score floor)
+  job: dict {title, company, snippet, url} (for cover_letter)
+  job_url: string (for apply)
+  confirm: boolean — MUST be true to actually submit an application; omit or false to only fill the form
+  Use job_hunter when the user wants to find, filter, apply to, or track job applications.
+
+browser_worker
+  action: "status" | "launch" | "open" | "text" | "html" | "links" | "screenshot" | "eval" | "click" | "fill" | "close" (required)
+  url: string (for open/text/html/links/screenshot)
+  pattern: string (href substring filter for links)
+  selector: string (CSS selector for click/fill)
+  text: string (value for fill)
+  expression: string (JavaScript for eval)
+  path: string (screenshot output)
+  port: integer (CDP port for launch, default 9222)
+  Use browser_worker (instead of browser_control) when the page needs the user's logged-in
+  Chrome profile/session, or for multi-step authenticated flows.
+
 file_controller
   action: "write" | "create_file" | "read" | "list" | "delete" | "move" | "copy" | "find" | "disk_usage" (required)
   path: string — use "desktop" for Desktop folder

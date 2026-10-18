@@ -39,3 +39,8 @@ PyQt6-WebEngine
 edge-tts
 matplotlib
 speedtest-cli
+pypdf
+langgraph
+chromadb
+sqlite-vec
+pvporcupine

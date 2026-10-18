@@ -59,6 +59,7 @@ from core.sensorium import sensorium
 from core.protocols import protocols
 from core.local_brain import local_brain
 import asyncio
+import random
 import threading
 import json
 import re
@@ -158,7 +159,9 @@ CHANNELS            = 1
 SEND_SAMPLE_RATE    = 16000
 RECEIVE_SAMPLE_RATE = 24000
 CHUNK_SIZE          = 1024
-LIVE_CONNECT_TIMEOUT = 12
+LIVE_CONNECT_TIMEOUT = 30
+LIVE_RECONNECT_BASE_DELAY = 5
+LIVE_RECONNECT_MAX_DELAY = 60
 
 
 def _get_api_key() -> str:
@@ -2087,6 +2090,93 @@ TOOL_DECLARATIONS = [
                 }
             },
             "required": ["description"]
+        }
+    },
+    {
+        "name": "job_hunter",
+        "description": (
+            "Autonomous job application agent. Ingests the user's resume, hunts live vacancies on "
+            "logged-in job boards (LinkedIn, Indeed, Naukri, Wellfound, Google Jobs) through the "
+            "persistent browser profile, scores each role against the resume, drafts a tailored "
+            "cover letter, and (with explicit confirmation) fills and submits application forms."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "description": (
+                        "profile (ingest resume) | search (find jobs) | cover_letter (tailor letter) | "
+                        "apply (fill/submit form) | report (summary) | list | status. Default: status."
+                    )
+                },
+                "resume_path": {
+                    "type": "STRING",
+                    "description": "Path to the resume file (.pdf, .docx, .txt, .md). Required for action=profile."
+                },
+                "query": {
+                    "type": "STRING",
+                    "description": "Job search query / role title (e.g. 'senior python engineer')."
+                },
+                "location": {
+                    "type": "STRING",
+                    "description": "Location filter, e.g. 'remote', 'bangalore', 'new york'."
+                },
+                "boards": {
+                    "type": "STRING",
+                    "description": "Comma-separated boards: linkedin, indeed, naukri, wellfound, google."
+                },
+                "limit": {
+                    "type": "INTEGER",
+                    "description": "Maximum number of postings to fetch (default 25)."
+                },
+                "min_score": {
+                    "type": "INTEGER",
+                    "description": "Only return postings with a match score at or above this value (0-100)."
+                },
+                "job": {
+                    "type": "OBJECT",
+                    "description": "Job object for action=cover_letter: {title, company, snippet, url}."
+                },
+                "title": {"type": "STRING", "description": "Job title (alternative to job object)."},
+                "company": {"type": "STRING", "description": "Company name (alternative to job object)."},
+                "snippet": {"type": "STRING", "description": "Job description text for cover letter / apply."},
+                "job_url": {"type": "STRING", "description": "Posting URL to open and apply to."},
+                "confirm": {
+                    "type": "BOOLEAN",
+                    "description": "Set true ONLY to actually submit an application form after the user approves."
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "browser_worker",
+        "description": (
+            "Persistent-profile browser session over the Chrome DevTools Protocol. Reuses the user's "
+            "logged-in Chrome (cookies, sessions, extensions) so authenticated pages work without "
+            "re-entering credentials. Use for multi-step browsing, reading authenticated pages, "
+            "extracting links/text, screenshots, or evaluating JS."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "description": (
+                        "status (report Chrome/CDP state) | launch (start Chrome with CDP) | open | text | "
+                        "html | links | screenshot | eval | click | fill | close."
+                    )
+                },
+                "url": {"type": "STRING", "description": "Target URL for open/text/html/links/screenshot."},
+                "pattern": {"type": "STRING", "description": "Substring filter applied to hrefs for action=links."},
+                "selector": {"type": "STRING", "description": "CSS selector for click/fill."},
+                "text": {"type": "STRING", "description": "Value to type for action=fill."},
+                "expression": {"type": "STRING", "description": "JavaScript expression for action=eval."},
+                "path": {"type": "STRING", "description": "Output path for action=screenshot."},
+                "port": {"type": "INTEGER", "description": "CDP port for action=launch (default 9222)."}
+            },
+            "required": []
         }
     },
 ]
@@ -5253,6 +5343,7 @@ class SudarshanaLive:
             http_options={"api_version": "v1beta"}
         )
 
+        connect_attempts = 0
         while True:
             try:
                 print("[SUDARSHANA CHAKRA] 🔌 Connecting...")
@@ -5269,6 +5360,7 @@ class SudarshanaLive:
                         self.out_queue      = asyncio.Queue()  # Fix: removed maxsize=10 to prevent dropping packets
                         
                         print("[SUDARSHANA CHAKRA] ✅ Connected.")
+                        connect_attempts = 0
                         try:
                             self.ui.boot_set_step_status("Connect AI backend", "done")
                             self.ui.boot_set_progress(75, "AI backend connected")
@@ -5308,16 +5400,29 @@ class SudarshanaLive:
                         pass
                     
             except Exception as e:
-                print(f"[SUDARSHANA CHAKRA] ⚠️ {e}")
-                traceback.print_exc()
+                connect_attempts += 1
+                if isinstance(e, TimeoutError):
+                    print(
+                        f"[SUDARSHANA CHAKRA] ⚠️ Live handshake did not complete in "
+                        f"{LIVE_CONNECT_TIMEOUT}s (attempt {connect_attempts}); the startup "
+                        f"backlog is still competing for the event loop."
+                    )
+                else:
+                    print(f"[SUDARSHANA CHAKRA] ⚠️ {e}")
+                    traceback.print_exc()
                 if _is_gemini_limit_error(e):
                     self._use_openrouter_first = True
                 self.session = None
                 self._loop = None
             self.set_speaking(False)
             self.ui.set_state("LISTENING")
-            print("[SUDARSHANA CHAKRA] 🔄 Reconnecting in 5s...")
-            await asyncio.sleep(5)
+            backoff = min(
+                LIVE_RECONNECT_MAX_DELAY,
+                LIVE_RECONNECT_BASE_DELAY * (2 ** min(connect_attempts, 4)),
+            )
+            delay = backoff + random.uniform(0.0, 1.5)
+            print(f"[SUDARSHANA CHAKRA] 🔄 Reconnecting in {delay:.1f}s...")
+            await asyncio.sleep(delay)
 
 def main():
     _startup_log("main entered")

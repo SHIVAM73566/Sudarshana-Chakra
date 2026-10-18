@@ -118,6 +118,10 @@
 ### 🧠 Long-Term Memory & Identity
 - Adaptive memory engine stores personal user preferences, ongoing projects, and custom instructions across sessions.
 
+### 🧰 Service Layer (`services/`)
+- **Persistent Profile Browser Worker** — drives the user's real Chrome over the DevTools Protocol (`connect_over_cdp`) or a dedicated persistent profile, so logged-in sessions, cookies and extensions survive across restarts. Exposes open/text/html/links/screenshot/eval/click/fill/close as the `browser_worker` tool.
+- **Autonomous Job Hunter** — ingests a resume (PDF/DOCX/TXT/MD), searches live job boards through the authenticated browser, scores every posting against the resume, drafts tailored cover letters, and prepares or (with explicit `confirm`) submits application forms. Exposed as the `job_hunter` tool.
+
 ---
 
 ## 🚀 Quick Start
