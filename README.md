@@ -294,6 +294,8 @@ python tools/build_promo_images.py                         # storefront promo su
 - **Verified Stability:** 170/170 Python files byte-compile, 165/165 modules import cleanly, 0 undefined names, 0 bare `except:` handlers, 55/55 dynamic tool schemas valid, 49/49 tests green, clean offscreen boot with the dashboard (`:8000`) and mobile gateway (`:8765`) healthy.
 - **Hardened Runtime:** the attachment pipeline, the System & Hardware control card, and the dynamic skill registry were repaired; skill loading is now deterministic and independent of file timestamps.
 - **Active Engines:** Live Meeting Assistant, Office Persona mode, SkillForge self-correcting runtime, and the Sudarshana Connect mobile QR pairing mesh.
+- **Unified Entrypoint:** `core/router.py` classifies every goal (`evolution` / `single_tool` / `dag`) and delegates to SkillDiscovery, the single-tool dispatcher, or the planner→replan DAG loop — no competing execution paths.
+- **Self-Improvement Loop:** `core/self_improvement.py` intercepts tracebacks, hands the broken source to `SkillForge._repair_code` with a cumulative error history, validates repairs through `SkillCrucible.validate_ast`, re-verifies on disk, and rolls back automatically when a repair never lands. Repo-scoped by design.
 
 ---
 
