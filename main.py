@@ -68,7 +68,6 @@ import socket
 import subprocess
 import sys
 import time
-import traceback
 import os
 import pyperclip
 from pathlib import Path
@@ -130,10 +129,10 @@ except Exception:
     DashboardServer = None
 
 try:
-    from actions.instagram_mcp import start_daemon as start_ig_daemon, set_ig_prompt_callback
+        from actions.instagram_mcp import start_daemon as start_ig_daemon
 except ImportError:
     try:
-        from actions.instagram_chat import start_daemon as start_ig_daemon, set_ig_prompt_callback
+            from actions.instagram_chat import start_daemon as start_ig_daemon
     except ImportError:
         start_ig_daemon = None
 
@@ -3719,7 +3718,6 @@ class SudarshanaLive:
             
             try:
                 import urllib.parse
-                import webbrowser
                 subject = "Message from Sudarshana Chakra"
                 quoted_recipient = urllib.parse.quote(self._email_recipient)
                 quoted_subject = urllib.parse.quote(subject)

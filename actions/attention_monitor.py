@@ -457,11 +457,6 @@ def _speak_edge_native(text: str, force_edge: bool = False) -> None:
 _speech_sink = None
 
 
-def set_speech_sink(sink_fn) -> None:
-    global _speech_sink
-    _speech_sink = sink_fn
-
-
 def speak_native(text: str, force_edge: bool = False) -> None:
     text = (text or "").strip()
     if not text:

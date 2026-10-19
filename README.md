@@ -6,7 +6,7 @@
 
 ### *The Self-Evolving, Multimodal Personal AI Desktop Environment*
 
-[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue?logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![PyQt6](https://img.shields.io/badge/GUI-PyQt6%20%2B%20WebEngine-darkgreen?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
 [![Gemini 2.5](https://img.shields.io/badge/Model-Gemini%202.5%20Flash%20Native%20Audio-orange?logo=google&logoColor=white)](https://ai.google.dev/)
 [![MCP](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol-purple)](https://modelcontextprotocol.io/)
@@ -128,7 +128,7 @@
 
 ### Prerequisites
 - **Windows 10 / 11** (64-bit)
-- **Python 3.11** or **Python 3.12**
+- **Python 3.11 or newer** (verified on **3.14.7**)
 - **Git**
 - Working Microphone & Speakers (Webcam optional for vision)
 - **Google Gemini API Key** (Get from [Google AI Studio](https://aistudio.google.com/))
@@ -282,7 +282,7 @@ python tools/build_promo_images.py                         # storefront promo su
 
 ### 🗺️ Multi-Platform Note
 
-- Sudarshana Chakra is built for **Windows 10/11 (64-bit)** with Python 3.11/3.12.
+- Sudarshana Chakra is built for **Windows 10/11 (64-bit)** with Python 3.11+ (verified on 3.14.7).
 - `bootstrap.ps1` auto-installs Python, Node.js (required for the Spotify MCP server), creates `./.venv`, installs `requirements.txt`, and prepares Playwright Chromium.
 - On systems without a microphone, voice commands degrade to typed text input and the voice lock can be unlocked with the text master password.
 
