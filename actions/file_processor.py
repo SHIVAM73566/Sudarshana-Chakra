@@ -179,16 +179,23 @@ def _process_pdf(path: Path, action: str, params: dict, speak=None) -> str:
             with pdfplumber.open(path) as pdf:
                 for page in pdf.pages:
                     text += (page.extract_text() or "") + "\n"
+            return text[:max_chars]
         except ImportError:
+            pass
+        except Exception:
+            return ""
+        for module_name in ("pypdf", "PyPDF2"):
             try:
-                import PyPDF2
-                with open(path, "rb") as f:
-                    reader = PyPDF2.PdfReader(f)
-                    for page in reader.pages:
-                        text += page.extract_text() + "\n"
+                module = __import__(module_name)
+                reader = module.PdfReader(str(path))
+                for page in reader.pages:
+                    text += (page.extract_text() or "") + "\n"
+                return text[:max_chars]
             except ImportError:
+                continue
+            except Exception:
                 return ""
-        return text[:max_chars]
+        return ""
 
     if action in ("summarize", "extract_text", "translate_hint", "analyze", "reformat"):
         text = _extract_pdf_text()

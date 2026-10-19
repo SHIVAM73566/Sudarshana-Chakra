@@ -599,7 +599,6 @@ class AgentExecutor:
                         step_ok = True
 
                         # Check if this step produced a deliverable file
-                        import re
                         file_match = re.search(r'([A-Za-z]:\\[^\s"\'<>`\r\n]+\.(?:pdf|docx|xlsx|pptx|png|jpg|mp4|py|html|json|txt))', str(result))
                         if not file_match and ("path" in params or "output_path" in params or "name" in params):
                             cand = str(params.get("output_path") or params.get("path") or params.get("name") or "")
