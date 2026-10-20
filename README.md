@@ -6,11 +6,16 @@
 
 ### *The Self-Evolving, Multimodal Personal AI Desktop Environment*
 
+> 🪐 **Sudarshana Chakra is a free, open, JARVIS-style AI assistant for Windows** that talks, sees, thinks, and controls your PC autonomously. Voice-powered, self-healing, and fully local-first — the trending open-source alternative to a personal AI desktop agent.
+
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![PyQt6](https://img.shields.io/badge/GUI-PyQt6%20%2B%20WebEngine-darkgreen?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
 [![Gemini 2.5](https://img.shields.io/badge/Model-Gemini%202.5%20Flash%20Native%20Audio-orange?logo=google&logoColor=white)](https://ai.google.dev/)
 [![MCP](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol-purple)](https://modelcontextprotocol.io/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
+[![License](https://img.shields.io/badge/License-Commercial%20Source--Available-yellow)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/SHIVAM73566/Sudarshana-Chakra/pulls)
+[![Stars](https://img.shields.io/github/stars/SHIVAM73566/Sudarshana-Chakra?style=social)](https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers)
 
 </div>
 
