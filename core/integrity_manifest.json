@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "files": {
+    "core/license_guard.py": "f56ae1e6ed5e771522c69ce0aa3265d51d29c2b0bfca8c51d98a42ee40685f8c",
+    "core/brand.py": "52f7893d1052cdc475467564639595d57a84a57a048c71d2abea71bbd8324eb6"
+  }
+}

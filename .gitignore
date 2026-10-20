@@ -72,3 +72,8 @@ gradle-8.7-bin.zip
 setup_android_sdk.ps1
 build_apk.ps1
 process_logo.py
+
+# Release build artifacts
+release/
+Sudarshana_Chakra_AI_v*_COMMERCIAL.zip
+*.tmp.txt

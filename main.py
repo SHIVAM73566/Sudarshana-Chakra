@@ -1,12 +1,11 @@
 from core.user_paths import get_user_data_dir
 from core.env import load_dotenv
 from core.brand import (
-    BRAND_NAME,
-    APP_CODENAME,
-    BRAND_TAGLINE,
     assert_brand_integrity,
     BrandIntegrityError,
 )
+from core import anti_tamper as _anti_tamper
+from core import license_guard as _license_guard
 import os
 
 load_dotenv()
@@ -17,7 +16,17 @@ try:
 except BrandIntegrityError:
     raise SystemExit(1)
 
-# Immutable avatar: restore the locked portrait if it was deleted or replaced.
+# Anti-tamper: warn in dev, hard-fail in release if a guarded core file changed.
+try:
+    _integrity_violations = _anti_tamper.enforce(release=_license_guard.licensing_enabled())
+    for _violation in _integrity_violations:
+        print(f"[Integrity] WARNING: {_violation}")
+except Exception as _integrity_exc:
+    print(f"FATAL: {_integrity_exc}")
+    raise SystemExit(1)
+
+# Companion avatar: never rewrite a user-chosen avatar. Only seed the default
+# asset when the user has NOT customised it, and never lock it read-only.
 try:
     from core.avatar import ensure_avatar_asset
     ensure_avatar_asset()
@@ -55,6 +64,18 @@ from memory import config_manager
 from memory.memory_manager import search_memory
 
 import core.boot_sentry
+from core import error_boundary as _error_boundary
+_error_boundary.install_error_boundaries()
+
+# Permanent self-healing: journal every uncaught traceback (and let SkillForge/
+# SkillCrucible repair in-app via the auto_heal tool). Journal-only at boot so
+# startup never rewrites source; the interactive healer still applies patches.
+try:
+    from core import self_improvement as _self_improvement
+
+    _self_improvement.install_interceptor(heal=False)
+except Exception:
+    pass
 from core.sensorium import sensorium
 from core.protocols import protocols
 from core.local_brain import local_brain
@@ -2178,6 +2199,183 @@ TOOL_DECLARATIONS = [
             "required": []
         }
     },
+    {
+        "name": "browser_mcp",
+        "description": (
+            "Full Playwright (Model Context Protocol) browser agent. Navigate, click, type, fill forms, "
+            "scroll, screenshot, save PDFs, manage tabs, read console/network, upload files, and evaluate "
+            "JS. Use for rich interactive web automation, scraping, and form filling."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "description": (
+                        "navigate | go_back | snapshot | find | click | hover | type | press_key | scroll | "
+                        "fill_form | select_option | drag | evaluate | screenshot | save_pdf | tabs | wait_for | "
+                        "handle_dialog | file_upload | console_messages | network_requests | resize | close."
+                    )
+                },
+                "url": {"type": "STRING", "description": "URL for action=navigate or tabs."},
+                "target": {"type": "STRING", "description": "Accessible name/role target for click/hover/type."},
+                "element": {"type": "STRING", "description": "Human-readable element description."},
+                "selector": {"type": "STRING", "description": "CSS selector alternative for click/hover/type/select."},
+                "text": {"type": "STRING", "description": "Text to type or find."},
+                "key": {"type": "STRING", "description": "Key name for action=press_key."},
+                "submit": {"type": "BOOLEAN", "description": "Press Enter after typing (action=type)."},
+                "direction": {"type": "STRING", "description": "Scroll direction: up | down."},
+                "amount": {"type": "INTEGER", "description": "Scroll amount in pixels."},
+                "fields": {"type": "OBJECT", "description": "Field map for action=fill_form."},
+                "values": {"type": "ARRAY", "description": "Option values for action=select_option.", "items": {"type": "STRING"}},
+                "source": {"type": "STRING", "description": "Drag source for action=drag."},
+                "expression": {"type": "STRING", "description": "JavaScript for action=evaluate."},
+                "output_path": {"type": "STRING", "description": "Screenshot output path."},
+                "full_page": {"type": "BOOLEAN", "description": "Capture full page (action=screenshot)."},
+                "filename": {"type": "STRING", "description": "Output filename for action=save_pdf."},
+                "tab_action": {"type": "STRING", "description": "list | new | select | close."},
+                "index": {"type": "INTEGER", "description": "Tab index for action=tabs."},
+                "time_ms": {"type": "INTEGER", "description": "Milliseconds for action=wait_for."},
+                "accept": {"type": "BOOLEAN", "description": "Accept dialog (action=handle_dialog)."},
+                "prompt_text": {"type": "STRING", "description": "Prompt response text (action=handle_dialog)."},
+                "paths": {"type": "ARRAY", "description": "File paths for action=file_upload.", "items": {"type": "STRING"}},
+                "level": {"type": "STRING", "description": "Console level filter."},
+                "static": {"type": "BOOLEAN", "description": "Include static requests (action=network_requests)."},
+                "width": {"type": "INTEGER", "description": "Viewport width (action=resize)."},
+                "height": {"type": "INTEGER", "description": "Viewport height (action=resize)."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "ppt_template",
+        "description": (
+            "Create a fully designed PowerPoint by automatically finding and downloading a matching "
+            "professional template online, then populating it with your content. Use when the user wants "
+            "a polished, template-styled deck rather than a plain generated presentation."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "topic": {"type": "STRING", "description": "Presentation topic/title."},
+                "subtitle": {"type": "STRING", "description": "Optional subtitle."},
+                "outline": {"type": "STRING", "description": "Content outline (newline-separated points)."},
+                "theme": {"type": "STRING", "description": "Optional theme/style hint."},
+                "slides": {
+                    "type": "ARRAY",
+                    "description": "Optional explicit slides: [{title, bullets, notes}].",
+                    "items": {"type": "OBJECT"}
+                },
+                "auto_open": {"type": "BOOLEAN", "description": "Open the file after creation (default true)."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "inventory_manager",
+        "description": (
+            "Track stock levels, raise automated low-stock reorder alerts, adjust quantities, and "
+            "export inventory reconciliation reports to Excel/CSV. Local SQLite-backed."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "add | update | adjust | low_stock | list | get | export | delete."},
+                "sku": {"type": "STRING", "description": "Stock keeping unit identifier."},
+                "name": {"type": "STRING", "description": "Item name."},
+                "quantity": {"type": "INTEGER", "description": "Quantity on hand (add/update) or delta (adjust)."},
+                "reorder_level": {"type": "INTEGER", "description": "Threshold below which a reorder alert fires."},
+                "unit_cost": {"type": "NUMBER", "description": "Cost per unit."},
+                "location": {"type": "STRING", "description": "Warehouse/bin location."},
+                "output_path": {"type": "STRING", "description": "Destination for action=export (.xlsx or .csv)."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "procurement_manager",
+        "description": (
+            "Create and track purchase orders, compare vendor quotes, and export procurement/supplier "
+            "reports to Excel/CSV. Local SQLite-backed."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "create_po | update_status | compare_quotes | list | get | export | delete."},
+                "po_number": {"type": "STRING", "description": "Purchase order number."},
+                "supplier": {"type": "STRING", "description": "Supplier/vendor name."},
+                "items": {"type": "ARRAY", "description": "Line items.", "items": {"type": "OBJECT"}},
+                "amount": {"type": "NUMBER", "description": "Total PO amount."},
+                "status": {"type": "STRING", "description": "draft | sent | received | cancelled."},
+                "quotes": {"type": "ARRAY", "description": "Vendor quotes [{vendor, amount}] for compare_quotes.", "items": {"type": "OBJECT"}},
+                "output_path": {"type": "STRING", "description": "Destination for action=export."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "finance_manager",
+        "description": (
+            "Record ledger entries, generate profit & loss statements, compute margins and ROI, and "
+            "export financial reports to Excel/CSV. Local SQLite-backed with encrypted amounts."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "add_entry | pnl | ledger | roi | list | export | delete."},
+                "entry_id": {"type": "STRING", "description": "Ledger entry identifier."},
+                "account": {"type": "STRING", "description": "Account name."},
+                "entry_type": {"type": "STRING", "description": "revenue | expense | invoice."},
+                "category": {"type": "STRING", "description": "Free-form category."},
+                "amount": {"type": "NUMBER", "description": "Entry amount."},
+                "spend": {"type": "NUMBER", "description": "Investment/spend for action=roi."},
+                "returns": {"type": "NUMBER", "description": "Return/income for action=roi."},
+                "output_path": {"type": "STRING", "description": "Destination for action=export."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "manufacturing_manager",
+        "description": (
+            "Create and store bills of materials (BOMs), explode component requirements for a build "
+            "quantity, and export production planning sheets to Excel/CSV. Local SQLite-backed."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "create_bom | explode | list | get | export | delete."},
+                "bom_id": {"type": "STRING", "description": "BOM identifier."},
+                "product": {"type": "STRING", "description": "Finished product name."},
+                "components": {"type": "ARRAY", "description": "Components [{name, qty_per_unit, unit_cost}].", "items": {"type": "OBJECT"}},
+                "quantity": {"type": "INTEGER", "description": "Build quantity for action=explode."},
+                "output_path": {"type": "STRING", "description": "Destination for action=export."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "marketing_manager",
+        "description": (
+            "Record marketing campaign metrics, compute CTR/CPC/CPA/ROAS and ROI, rank campaigns, and "
+            "export marketing analytics to Excel/CSV. Local SQLite-backed."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "add_campaign | analyze | list | get | export | delete."},
+                "campaign_id": {"type": "STRING", "description": "Campaign identifier."},
+                "channel": {"type": "STRING", "description": "meta | google | linkedin | email | etc."},
+                "spend": {"type": "NUMBER", "description": "Total ad spend."},
+                "impressions": {"type": "INTEGER", "description": "Impressions served."},
+                "clicks": {"type": "INTEGER", "description": "Clicks recorded."},
+                "conversions": {"type": "INTEGER", "description": "Conversions recorded."},
+                "revenue": {"type": "NUMBER", "description": "Attributed revenue (for ROAS/ROI)."},
+                "output_path": {"type": "STRING", "description": "Destination for action=export."}
+            },
+            "required": []
+        }
+    },
 ]
 
 
@@ -3723,12 +3921,7 @@ class SudarshanaLive:
                 quoted_subject = urllib.parse.quote(subject)
                 quoted_body = urllib.parse.quote(self._email_message)
                 
-                import os
-                import subprocess
-                import shutil
-
                 app_lower = self._email_app.lower()
-                chrome_opened = False
 
                 if "gmail" in app_lower or "chrome" in app_lower:
                     import urllib.parse
@@ -3891,7 +4084,6 @@ class SudarshanaLive:
             except Exception:
                 pass
             reply = ""
-            gemini_first = not self._use_openrouter_first
             request_text = f"{memory_ctx}\n\nCurrent User Request:\n{text}" if memory_ctx else text
 
             app_settings = config_manager.load_settings()
@@ -4508,7 +4700,7 @@ class SudarshanaLive:
                 image_path = args.get("image_path", "")
                 caption = args.get("caption", "")
                 open_browser = args.get("open_in_browser", True)
-                self.ui.write_log(f"SYS: Publishing photo to Instagram...")
+                self.ui.write_log("SYS: Publishing photo to Instagram...")
                 if hasattr(self.ui, "show_hud_operation"):
                     self.ui.show_hud_operation("Instagram Post", f"Uploading {Path(image_path).name}...", sources=["instagram.com"])
                 from actions.instagram_mcp import InstagramService
@@ -4524,7 +4716,7 @@ class SudarshanaLive:
                 caption = args.get("caption", "")
                 thumb = args.get("thumbnail_path")
                 open_browser = args.get("open_in_browser", True)
-                self.ui.write_log(f"SYS: Publishing Reel to Instagram...")
+                self.ui.write_log("SYS: Publishing Reel to Instagram...")
                 if hasattr(self.ui, "show_hud_operation"):
                     self.ui.show_hud_operation("Instagram Reel", f"Uploading {Path(video_path).name}...", sources=["instagram.com"])
                 from actions.instagram_mcp import InstagramService
@@ -4961,7 +5153,7 @@ class SudarshanaLive:
                 self.speak("Goodbye, sir.")
 
                 def _shutdown():
-                    import time, sys, os
+                    import time, os
                     time.sleep(1)
                     os._exit(0)
 
@@ -5268,7 +5460,6 @@ class SudarshanaLive:
 
     async def _play_audio(self):
         print("[SUDARSHANA CHAKRA] 🔊 Play started")
-        loop = asyncio.get_event_loop()
         import numpy as np
 
         _spk_name = config_manager.get_output_device()
@@ -5432,10 +5623,30 @@ def main():
     except Exception as exc:
         _startup_log(f"GitHub update skipped: {exc}")
     _ensure_desktop_shortcut()
+    _license_state = _license_guard.evaluate()
+    _startup_log(f"license status: {_license_state.status.value} ({_license_state.reason})")
     ui = SudarshanaUI(str(BASE_DIR / "assets" / "sudarshana_chakra_ai_logo.png"), show_immediately=True)
+
+    if _license_state.needs_paywall:
+        try:
+            from core.license_ui import PaywallDialog
+
+            _paywall = PaywallDialog("trial_expired" if _license_state.status == _license_guard.LicenseStatus.TRIAL_EXPIRED else "activation", parent=None)
+            if _paywall.exec() == _paywall.DialogCode.Accepted:
+                _license_state = _license_guard.evaluate()
+                _startup_log("license activated via paywall")
+        except Exception as exc:
+            _startup_log(f"paywall unavailable: {exc}")
+
     dashboard = None
-    dashboard_enabled = DashboardServer is not None and not _is_port_in_use(8000)
-    if DashboardServer is not None and not dashboard_enabled:
+    dashboard_enabled = (
+        DashboardServer is not None
+        and _license_state.allows_core
+        and not _is_port_in_use(8000)
+    )
+    if DashboardServer is not None and not _license_state.allows_core:
+        _startup_log("dashboard disabled: license not active")
+    elif DashboardServer is not None and not dashboard_enabled:
         _startup_log("dashboard disabled: port 8000 already in use")
         try:
             ui.write_log("SYS: Mobile Connect is already running in another Sudarshana Chakra instance.")
@@ -5504,6 +5715,48 @@ def main():
 
     ui.show_main()
     _startup_log("ui shown")
+
+    # Trial / license status banner (hidden entirely when licensing is disabled).
+    try:
+        from PyQt6.QtCore import QTimer
+        from core.license_ui import PaywallDialog, TrialBanner
+
+        _trial_banner = TrialBanner(parent=ui)
+        if _trial_banner.refresh():
+            _attach = getattr(ui, "add_top_banner", None)
+            if callable(_attach):
+                _attach(_trial_banner)
+            else:
+                _trial_banner.setParent(ui)
+                _trial_banner.move(0, 0)
+                _trial_banner.show()
+
+        def _open_paywall():
+            state = _license_guard.evaluate()
+            kind = "trial_expired" if state.status == _license_guard.LicenseStatus.TRIAL_EXPIRED else "activation"
+            dlg = PaywallDialog(kind, parent=ui)
+            if dlg.exec() == dlg.DialogCode.Accepted:
+                try:
+                    _trial_banner.refresh()
+                    ui.write_log("LICENSE: Activated. Thank you for your purchase!")
+                except Exception:
+                    pass
+
+        _trial_banner.unlock_clicked.connect(_open_paywall)
+
+        if _license_state.is_trial:
+            def _daily_refresh():
+                try:
+                    _trial_banner.refresh()
+                except Exception:
+                    pass
+
+            _trial_timer = QTimer(ui)
+            _trial_timer.setInterval(3600 * 1000)
+            _trial_timer.timeout.connect(_daily_refresh)
+            _trial_timer.start()
+    except Exception as _banner_exc:
+        _startup_log(f"trial banner unavailable: {_banner_exc}")
 
     # Start Sudarshana Passive Sensorium Engine (v2)
     try:
@@ -5672,7 +5925,7 @@ if __name__ == "__main__":
                 namespace = {"__name__": "__main__", "__file__": sys.argv[1]}
                 exec(code, namespace)
                 sys.exit(0)
-            except Exception as e:
+            except Exception:
                 traceback.print_exc()
                 sys.exit(1)
         elif sys.argv[1] == "-m" and len(sys.argv) >= 3 and sys.argv[2] == "pip":
@@ -5685,7 +5938,12 @@ if __name__ == "__main__":
 
     try:
         main()
-    except Exception as e:
-        with open("FATAL_CRASH.log", "w") as f:
-            traceback.print_exc(file=f)
+    except Exception:
+        try:
+            from core.security import redact_secrets
+
+            with open("FATAL_CRASH.log", "w", encoding="utf-8") as f:
+                f.write(redact_secrets("".join(traceback.format_exception(*sys.exc_info()))))
+        except Exception:
+            pass
         raise

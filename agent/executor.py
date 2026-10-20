@@ -205,7 +205,37 @@ def _translate_to_goal_language(content: str, goal: str) -> str:
         print(f"[Executor] ⚠️ Translation failed: {e}")
         return content
 
+def _license_gate() -> str | None:
+    """Return a user-facing lock message when core tools must not run.
+
+    Dormant unless licensing is enabled; never raises.
+    """
+    try:
+        from core import license_guard as _lg
+
+        state = _lg.evaluate()
+        if state.allows_core:
+            return None
+        if state.status == _lg.LicenseStatus.TRIAL_EXPIRED:
+            return (
+                "This Sudarshana Chakra trial has ended, so core tools are paused. "
+                "Unlock lifetime ownership to continue."
+            )
+        return "Sudarshana Chakra is not activated, so core tools are paused."
+    except Exception:
+        return None
+
+
 def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any = None) -> str:
+    locked = _license_gate()
+    if locked is not None:
+        if player and hasattr(player, "ui"):
+            try:
+                player.ui.write_log(f"LICENSE: {locked}")
+            except Exception:
+                pass
+        return locked
+
     # Live Thinking Out Loud Breadcrumb
     params = parameters or {}
     breadcrumb = {
@@ -229,6 +259,14 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
             player.ui.write_log(f"THINKING: {breadcrumb}")
         except Exception:
             pass
+
+    if tool in ("inventory_manager", "inventory", "stock_manager", "supply_inventory",
+                "procurement_manager", "procurement", "purchase_orders", "supplier_manager", "supply_chain",
+                "finance_manager", "finance", "accounting", "ledger", "profit_and_loss",
+                "manufacturing_manager", "manufacturing", "bom", "bill_of_materials",
+                "marketing_manager", "marketing", "campaign_analytics", "ad_performance"):
+        from core.tool_registry import get_registry
+        return get_registry().execute(tool, dict(parameters or {}), player=player, speak=speak)
 
     if tool in ("pdf_document", "create_pdf", "pdf_tools"):
         from actions.pdf_tools import create_pdf
@@ -257,6 +295,80 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
     elif tool in ("browser_worker", "persistent_browser", "cdp_browser"):
         from services.browser_worker import browser_worker as browser_worker_action
         return browser_worker_action(parameters=parameters, player=player) or "Done."
+    elif tool in ("browser_mcp", "playwright_mcp", "mcp_browser"):
+        from actions.playwright_mcp_client import get_playwright_mcp_client
+        p = dict(parameters or {})
+        action = (p.get("action") or "").strip().lower()
+        client = get_playwright_mcp_client()
+        _MCP_ACTIONS = {
+            "navigate": lambda c: c.navigate(p.get("url") or p.get("target") or ""),
+            "go_back": lambda c: c.navigate_back(),
+            "back": lambda c: c.navigate_back(),
+            "snapshot": lambda c: c.snapshot(),
+            "find": lambda c: c.find(p.get("text") or ""),
+            "click": lambda c: c.click(target=p.get("target"), element=p.get("element"), selector=p.get("selector")),
+            "hover": lambda c: c.hover(target=p.get("target"), element=p.get("element"), selector=p.get("selector")),
+            "type": lambda c: c.type_text(p.get("text") or "", target=p.get("target"), element=p.get("element"), selector=p.get("selector"), submit=bool(p.get("submit"))),
+            "press_key": lambda c: c.press_key(p.get("key") or ""),
+            "scroll": lambda c: c.scroll(direction=p.get("direction") or "down", amount=int(p.get("amount") or 500)),
+            "fill_form": lambda c: c.fill_form(p.get("fields") or {}),
+            "select_option": lambda c: c.select_option(p.get("values") or [], target=p.get("target"), element=p.get("element"), selector=p.get("selector")),
+            "drag": lambda c: c.drag(p.get("source") or "", p.get("target") or ""),
+            "evaluate": lambda c: c.evaluate(p.get("expression") or ""),
+            "screenshot": lambda c: c.take_screenshot(output_path=p.get("output_path"), full_page=bool(p.get("full_page"))),
+            "save_pdf": lambda c: c.save_pdf(filename=p.get("filename")),
+            "tabs": lambda c: c.tabs(action=p.get("tab_action") or "list", index=p.get("index"), url=p.get("url")),
+            "wait_for": lambda c: c.wait_for(text=p.get("text"), time_ms=p.get("time_ms")),
+            "handle_dialog": lambda c: c.handle_dialog(accept=bool(p.get("accept", True)), prompt_text=p.get("prompt_text")),
+            "file_upload": lambda c: c.file_upload(p.get("paths") or []),
+            "console_messages": lambda c: c.console_messages(level=p.get("level") or "info"),
+            "network_requests": lambda c: c.network_requests(static=bool(p.get("static"))),
+            "resize": lambda c: c.resize(int(p.get("width") or 1280), int(p.get("height") or 800)),
+            "close": lambda c: c.close(),
+        }
+        if not action:
+            action = "snapshot"
+        handler = _MCP_ACTIONS.get(action)
+        if handler is None:
+            return f"Unknown browser_mcp action '{action}'. Valid: {', '.join(sorted(_MCP_ACTIONS))}."
+        return str(handler(client)) or "Done."
+
+    elif tool in ("ppt_template", "template_presentation", "ppt_from_template"):
+        from actions.ppt_template_workflow import (
+            infer_presentation_profile,
+            resolve_presentation_template,
+            build_presentation_from_template,
+        )
+        p = dict(parameters or {})
+        title = p.get("topic") or p.get("title") or p.get("description") or "Presentation"
+        subtitle = p.get("subtitle") or ""
+        outline = p.get("outline") or p.get("description") or ""
+        slides = p.get("slides") if isinstance(p.get("slides"), list) else None
+        profile = infer_presentation_profile(
+            title=title, subtitle=subtitle, theme_hint=p.get("theme") or "", outline=outline, slides=slides
+        )
+        resolved = resolve_presentation_template(profile)
+        if not resolved:
+            return "Could not find a suitable PowerPoint template online."
+        if not slides:
+            slides = [
+                {"title": title, "bullets": [b for b in str(outline).split("\n") if b.strip()][:6] or ["Overview"]},
+            ]
+        safe_name = "".join(ch for ch in str(title) if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "presentation"
+        out_dir = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "SudarshanaAI" / "presentations"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        output_path = out_dir / f"{safe_name}.pptx"
+        result = build_presentation_from_template(
+            template_path=Path(resolved["path"]),
+            parameters=p,
+            profile=profile,
+            slides=slides,
+            output_path=output_path,
+            auto_open=bool(p.get("auto_open", True)),
+            player=player,
+        )
+        return result or f"Presentation created at {output_path}"
+
     elif tool == "browser_control" or tool.startswith("browser_"):
         from actions.browser_control import browser_control
         p = dict(parameters or {})

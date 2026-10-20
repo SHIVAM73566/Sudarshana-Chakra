@@ -4,10 +4,9 @@ import os
 import platform
 import shutil
 import subprocess
-import sys
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("playwright_mcp_client")
 logger.setLevel(logging.INFO)
@@ -455,3 +454,67 @@ def get_playwright_mcp_client() -> PlaywrightMCPClient:
         if _mcp_client is None:
             _mcp_client = PlaywrightMCPClient()
         return _mcp_client
+
+
+FEATURE_METADATA = {
+    "name": "browser_mcp",
+    "description": (
+        "Full Playwright (Model Context Protocol) browser agent: navigate, click, type, fill "
+        "forms, scroll, screenshot, save PDFs, manage tabs, read console/network, upload files, "
+        "and evaluate JS."
+    ),
+    "category": "browser",
+    "parameters": {
+        "action": "string (required) - navigate|go_back|snapshot|find|click|hover|type|press_key|scroll|fill_form|select_option|drag|evaluate|screenshot|save_pdf|tabs|wait_for|handle_dialog|file_upload|console_messages|network_requests|resize|close",
+        "url": "string", "target": "string", "element": "string", "selector": "string",
+        "text": "string", "key": "string", "submit": "boolean", "direction": "string",
+        "amount": "integer", "fields": "object", "values": "array", "source": "string",
+        "expression": "string", "output_path": "string", "full_page": "boolean",
+        "filename": "string", "tab_action": "string", "index": "integer",
+        "time_ms": "integer", "accept": "boolean", "prompt_text": "string",
+        "paths": "array", "level": "string", "static": "boolean",
+        "width": "integer", "height": "integer",
+    },
+}
+
+
+def execute(**kwargs) -> dict:
+    """Registry entry point for the browser_mcp tool."""
+    params = kwargs.get("parameters") if isinstance(kwargs.get("parameters"), dict) else kwargs
+    params = dict(params or {})
+    action = (params.get("action") or "snapshot").strip().lower()
+    client = get_playwright_mcp_client()
+
+    handlers = {
+        "navigate": lambda c: c.navigate(params.get("url") or params.get("target") or ""),
+        "go_back": lambda c: c.navigate_back(),
+        "back": lambda c: c.navigate_back(),
+        "snapshot": lambda c: c.snapshot(),
+        "find": lambda c: c.find(params.get("text") or ""),
+        "click": lambda c: c.click(target=params.get("target"), element=params.get("element"), selector=params.get("selector")),
+        "hover": lambda c: c.hover(target=params.get("target"), element=params.get("element"), selector=params.get("selector")),
+        "type": lambda c: c.type_text(params.get("text") or "", target=params.get("target"), element=params.get("element"), selector=params.get("selector"), submit=bool(params.get("submit"))),
+        "press_key": lambda c: c.press_key(params.get("key") or ""),
+        "scroll": lambda c: c.scroll(direction=params.get("direction") or "down", amount=int(params.get("amount") or 500)),
+        "fill_form": lambda c: c.fill_form(params.get("fields") or {}),
+        "select_option": lambda c: c.select_option(params.get("values") or [], target=params.get("target"), element=params.get("element"), selector=params.get("selector")),
+        "drag": lambda c: c.drag(params.get("source") or "", params.get("target") or ""),
+        "evaluate": lambda c: c.evaluate(params.get("expression") or ""),
+        "screenshot": lambda c: c.take_screenshot(output_path=params.get("output_path"), full_page=bool(params.get("full_page"))),
+        "save_pdf": lambda c: c.save_pdf(filename=params.get("filename")),
+        "tabs": lambda c: c.tabs(action=params.get("tab_action") or "list", index=params.get("index"), url=params.get("url")),
+        "wait_for": lambda c: c.wait_for(text=params.get("text"), time_ms=params.get("time_ms")),
+        "handle_dialog": lambda c: c.handle_dialog(accept=bool(params.get("accept", True)), prompt_text=params.get("prompt_text")),
+        "file_upload": lambda c: c.file_upload(params.get("paths") or []),
+        "console_messages": lambda c: c.console_messages(level=params.get("level") or "info"),
+        "network_requests": lambda c: c.network_requests(static=bool(params.get("static"))),
+        "resize": lambda c: c.resize(int(params.get("width") or 1280), int(params.get("height") or 800)),
+        "close": lambda c: c.close(),
+    }
+    handler = handlers.get(action)
+    if handler is None:
+        return {"success": False, "error": f"Unknown browser_mcp action '{action}'. Valid: {', '.join(sorted(handlers))}."}
+    try:
+        return {"success": True, "message": str(handler(client)) or "Done."}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}

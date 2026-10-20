@@ -8,8 +8,37 @@ This restores the `cmd_control` tool referenced by the planner and executor.
 
 import os
 import platform
+import re
 import shlex
 import subprocess
+
+# Destructive shell patterns are refused outright: a prompt-injected web page
+# must not be able to wipe disks or rewrite boot configuration via this tool.
+_BLOCKED_COMMAND_PATTERNS = (
+    re.compile(r"(?i)\bformat\s+[a-z]:"),
+    re.compile(r"(?i)\bdiskpart\b"),
+    re.compile(r"(?i)\bvssadmin\b.*\bdelete\b"),
+    re.compile(r"(?i)\bbcdedit\b"),
+    re.compile(r"(?i)\bcipher\s+/w"),
+    re.compile(r"(?i)\breg\s+delete\s+hklm"),
+    re.compile(r"(?i)\brm\s+-rf\s+/(\s|$)"),
+    re.compile(r"(?i)\b(del|erase)\s+/[fsq]\b.*[a-z]:\\?\*?"),
+    re.compile(r"(?i)\b(rd|rmdir)\s+/s\s+/q\s+[a-z]:\\?\s*$"),
+    re.compile(r"(?i)\bRemove-Item\b.*-Recurse\b.*[a-z]:\\?\s*$"),
+)
+
+_MAX_COMMAND_LEN = 4000
+
+
+def _rejection_reason(command: str) -> str | None:
+    if len(command) > _MAX_COMMAND_LEN:
+        return "Command rejected: exceeds the maximum length."
+    if "\x00" in command:
+        return "Command rejected: contains null bytes."
+    for pattern in _BLOCKED_COMMAND_PATTERNS:
+        if pattern.search(command):
+            return "Command rejected: destructive system operations are blocked."
+    return None
 
 
 def _open_with_default_app(path: str, player=None) -> str:
@@ -32,6 +61,14 @@ def _open_with_default_app(path: str, player=None) -> str:
 def _run_command(command: str, player=None) -> str:
     if not command or not command.strip():
         return "No command provided."
+    reason = _rejection_reason(command)
+    if reason:
+        if player:
+            try:
+                player.write_log(f"[cmd_control] BLOCKED: {command[:80]}")
+            except Exception:
+                pass
+        return reason
     try:
         if platform.system() == "Windows":
             proc = subprocess.run(

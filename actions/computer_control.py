@@ -64,6 +64,69 @@ def _require_pyautogui():
     if not _PYAUTOGUI:
         raise RuntimeError("PyAutoGUI not installed. Run: pip install pyautogui")
 
+
+def _ease_in_out(t: float) -> float:
+    """Smoothstep easing: slow start, fast middle, soft landing."""
+    t = max(0.0, min(1.0, t))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _bezier_path(x0, y0, x1, y1, steps: int):
+    """Cubic Bezier trajectory with a perpendicular bow, so the cursor arcs."""
+    dx, dy = float(x1 - x0), float(y1 - y0)
+    dist = max(1.0, (dx * dx + dy * dy) ** 0.5)
+    nx, ny = -dy / dist, dx / dist
+    bow = min(90.0, dist * 0.12) * random.choice((-1.0, 1.0))
+    cx1, cy1 = x0 + dx * 0.30 + nx * bow, y0 + dy * 0.30 + ny * bow
+    cx2, cy2 = x0 + dx * 0.70 + nx * bow * 0.6, y0 + dy * 0.70 + ny * bow * 0.6
+    points = []
+    for i in range(1, steps + 1):
+        t = _ease_in_out(i / steps)
+        u = 1.0 - t
+        points.append((
+            u ** 3 * x0 + 3 * u * u * t * cx1 + 3 * u * t * t * cx2 + t ** 3 * x1,
+            u ** 3 * y0 + 3 * u * u * t * cy1 + 3 * u * t * t * cy2 + t ** 3 * y1,
+        ))
+    return points
+
+
+def _human_move(x: int, y: int, duration: float | None = None) -> str:
+    """Glide the cursor along an eased Bezier curve instead of snapping."""
+    _require_pyautogui()
+    try:
+        x0, y0 = pyautogui.position()
+    except Exception:
+        x0, y0 = x, y
+    distance = ((x - x0) ** 2 + (y - y0) ** 2) ** 0.5
+    if duration is None:
+        duration = max(0.18, min(0.65, 0.10 + distance / 2200.0))
+    steps = max(12, min(42, int(duration * 90)))
+    frame = duration / steps
+    for px, py in _bezier_path(x0, y0, x, y, steps):
+        try:
+            pyautogui.moveTo(int(round(px)), int(round(py)))
+        except Exception:
+            break
+        time.sleep(max(0.004, frame + random.uniform(-0.003, 0.006)))
+    return f"Mouse → ({x}, {y})"
+
+
+def _human_type(text: str, base_interval: float = 0.03) -> None:
+    """Type with human cadence: per-key jitter and pauses at natural breaks."""
+    try:
+        for ch in text:
+            if ch == "\n":
+                pyautogui.press("enter")
+            elif ch == "\t":
+                pyautogui.press("tab")
+            else:
+                pyautogui.write(ch)
+            time.sleep(max(0.01, random.gauss(base_interval, base_interval * 0.45)))
+            if ch in " .,!?;:" and random.random() < 0.18:
+                time.sleep(random.uniform(0.05, 0.16))
+    except Exception:
+        pyautogui.typewrite(text, interval=base_interval)
+
 _FIRST_NAMES = [
     "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn",
     "Avery", "Blake", "Cameron", "Dakota", "Emerson", "Finley", "Harper",
@@ -141,8 +204,8 @@ def _user_profile() -> dict:
 
 def _type(text: str, interval: float = 0.03) -> str:
     _require_pyautogui()
-    time.sleep(0.3)
-    pyautogui.typewrite(text, interval=interval)
+    time.sleep(random.uniform(0.2, 0.45))
+    _human_type(text, interval)
     return f"Typed: {text[:60]}{'…' if len(text) > 60 else ''}"
 
 
@@ -158,14 +221,20 @@ def _smart_type(text: str, clear_first: bool = True) -> str:
         pyautogui.hotkey("ctrl", "v")
         return f"Smart-typed (clipboard): {text[:60]}{'…' if len(text) > 60 else ''}"
 
-    pyautogui.typewrite(text, interval=0.04)
+    _human_type(text, 0.04)
     return f"Smart-typed: {text[:60]}{'…' if len(text) > 60 else ''}"
 
 
 def _click(x=None, y=None, button: str = "left", clicks: int = 1) -> str:
     _require_pyautogui()
     if x is not None and y is not None:
-        pyautogui.click(x, y, button=button, clicks=clicks)
+        _human_move(x, y)
+        time.sleep(random.uniform(0.04, 0.12))
+        pyautogui.click(
+            button=button,
+            clicks=clicks,
+            interval=random.uniform(0.06, 0.14) if clicks > 1 else 0.0,
+        )
         return f"{'Double-c' if clicks == 2 else 'C'}licked ({x}, {y}) [{button}]"
     pyautogui.click(button=button, clicks=clicks)
     return f"Clicked at current position [{button}]"
@@ -193,14 +262,19 @@ def _scroll(direction: str = "down", amount: int = 3) -> str:
 
 def _move(x: int, y: int, duration: float = 0.3) -> str:
     _require_pyautogui()
-    pyautogui.moveTo(x, y, duration=duration)
-    return f"Mouse → ({x}, {y})"
+    return _human_move(x, y, duration)
 
 
 def _drag(x1: int, y1: int, x2: int, y2: int, duration: float = 0.5) -> str:
     _require_pyautogui()
-    pyautogui.moveTo(x1, y1, duration=0.2)
-    pyautogui.dragTo(x2, y2, duration=duration, button="left")
+    _human_move(x1, y1, 0.25)
+    time.sleep(random.uniform(0.05, 0.12))
+    pyautogui.mouseDown(button="left")
+    try:
+        _human_move(x2, y2, duration)
+    finally:
+        time.sleep(random.uniform(0.05, 0.12))
+        pyautogui.mouseUp(button="left")
     return f"Dragged ({x1},{y1}) → ({x2},{y2})"
 
 

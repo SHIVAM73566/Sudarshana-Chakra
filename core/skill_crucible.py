@@ -13,7 +13,6 @@ from __future__ import annotations
 import ast
 import json
 import logging
-import os
 import subprocess
 import sys
 import time
@@ -40,6 +39,37 @@ BANNED_AST_PATTERNS = [
     "install_wizard",
     "build_exe",
 ]
+
+# Callables that synthetic skills may never invoke, regardless of arguments.
+BANNED_AST_CALLS = {
+    "eval",
+    "exec",
+    "compile",
+    "__import__",
+    "os.system",
+    "os.popen",
+    "os.execv",
+    "os.execve",
+    "os.execl",
+    "os.execvp",
+    "ctypes.CDLL",
+    "ctypes.WinDLL",
+    "ctypes.windll",
+    "ctypes.cdll",
+}
+
+
+def _dotted_name(node: ast.AST) -> str:
+    """Best-effort dotted name for a call target (``os.system`` etc.)."""
+    parts: List[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+    elif isinstance(node, ast.Call):
+        return ""
+    return ".".join(reversed(parts))
 
 STANDARD_LIB_MODULES = {
     "abc", "argparse", "array", "ast", "asyncio", "base64", "binascii", "bisect",
@@ -127,6 +157,21 @@ class SkillCrucible:
                 for banned in BANNED_AST_PATTERNS:
                     if banned in val_lower:
                         return False, f"Security Violation: Prohibited term or system path '{banned}' detected."
+
+        # Safety scan for dangerous callables and shell execution
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = _dotted_name(node.func)
+            if name in BANNED_AST_CALLS:
+                return False, f"Security Violation: '{name}()' is not permitted in forged skills."
+            if name.startswith("subprocess.") and any(
+                kw.arg == "shell"
+                and isinstance(kw.value, ast.Constant)
+                and kw.value.value is True
+                for kw in node.keywords
+            ):
+                return False, "Security Violation: subprocess with shell=True is not permitted."
 
         return True, None
 

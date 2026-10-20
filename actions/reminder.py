@@ -4,6 +4,7 @@ import subprocess
 import os
 import sys
 from datetime import datetime
+from xml.sax.saxutils import escape as _xml_escape
 
 
 def reminder(
@@ -38,7 +39,7 @@ def reminder(
             return "That time is already in the past."
 
         task_name    = f"MARKReminder_{target_dt.strftime('%Y%m%d_%H%M')}"
-        safe_message = message.replace('"', '').replace("'", "").strip()[:200]
+        safe_message = " ".join(str(message).split())[:200] or "Reminder"
 
         python_exe = sys.executable
         if python_exe.lower().endswith("python.exe"):
@@ -67,14 +68,14 @@ try:
     from win10toast import ToastNotifier
     ToastNotifier().show_toast(
         "MARK Reminder",
-        "{safe_message}",
+        {safe_message!r},
         duration=15,
         threaded=False
     )
 except Exception:
     try:
         import subprocess
-        subprocess.run(["msg", "*", "/TIME:30", "{safe_message}"], shell=True)
+        subprocess.run(["msg", "*", "/TIME:30", {safe_message!r}])
     except Exception:
         pass
 
@@ -90,7 +91,7 @@ except Exception:
         xml_content = f'''<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>MARK Reminder: {safe_message}</Description>
+    <Description>MARK Reminder: {_xml_escape(safe_message)}</Description>
   </RegistrationInfo>
   <Triggers>
     <TimeTrigger>
@@ -126,8 +127,8 @@ except Exception:
             f.write(xml_content)
 
         result = subprocess.run(
-            f'schtasks /Create /TN "{task_name}" /XML "{xml_path}" /F',
-            shell=True, capture_output=True, text=True
+            ["schtasks", "/Create", "/TN", task_name, "/XML", xml_path, "/F"],
+            capture_output=True, text=True
         )
 
         try:

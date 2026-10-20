@@ -105,6 +105,71 @@ browser_worker
   Use browser_worker (instead of browser_control) when the page needs the user's logged-in
   Chrome profile/session, or for multi-step authenticated flows.
 
+browser_mcp
+  action: "navigate" | "go_back" | "snapshot" | "find" | "click" | "hover" | "type" | "press_key" | "scroll" | "fill_form" | "select_option" | "drag" | "evaluate" | "screenshot" | "save_pdf" | "tabs" | "wait_for" | "handle_dialog" | "file_upload" | "console_messages" | "network_requests" | "resize" | "close" (required)
+  url: string (for navigate / tabs)
+  target: string (accessible name/role target for click/hover/type)
+  element: string (human-readable element description)
+  selector: string (CSS selector alternative)
+  text: string (text to type or find)
+  key: string (key name for press_key)
+  submit: boolean (press Enter after typing)
+  direction: "up" | "down" (for scroll)
+  amount: integer (scroll pixels)
+  fields: dict (for fill_form)
+  values: array of strings (for select_option)
+  source: string (drag source)
+  expression: string (JavaScript for evaluate)
+  output_path: string (screenshot path)
+  full_page: boolean
+  filename: string (for save_pdf)
+  tab_action: "list" | "new" | "select" | "close"
+  index: integer (tab index)
+  time_ms: integer (for wait_for)
+  accept: boolean (for handle_dialog)
+  prompt_text: string (for handle_dialog)
+  paths: array of strings (for file_upload)
+  level: string (console level filter)
+  static: boolean (network_requests)
+  width: integer, height: integer (for resize)
+  Use browser_mcp for rich interactive Playwright automation: multi-step forms, scraping,
+  console/network inspection, PDF export, tab management, file uploads.
+
+ppt_template
+  topic: string — presentation topic/title
+  subtitle: string (optional)
+  outline: string — content outline (newline-separated points)
+  theme: string (optional style hint)
+  slides: array of {title, bullets, notes} (optional explicit slides)
+  auto_open: boolean (optional, default true)
+  Use ppt_template when the user wants a professionally TEMPLATE-STYLED PowerPoint deck
+  (automatically finds and downloads a matching template online, then fills it with content).
+
+inventory_manager
+  action: "add" | "update" | "adjust" | "low_stock" | "list" | "get" | "export" | "delete" (required)
+  sku, name: string; quantity, reorder_level: integer; unit_cost: number; location: string; output_path: string
+  Use for stock levels, low-stock reorder alerts, and inventory exports.
+
+procurement_manager
+  action: "create_po" | "update_status" | "compare_quotes" | "list" | "get" | "export" | "delete" (required)
+  po_number, supplier, status: string; items: array; amount: number; quotes: array of {vendor, amount}; output_path: string
+  Use for purchase orders, vendor quote comparison, and supplier tracking.
+
+finance_manager
+  action: "add_entry" | "pnl" | "ledger" | "roi" | "list" | "export" | "delete" (required)
+  entry_id, account, entry_type (revenue|expense|invoice), category: string; amount, spend, returns: number; output_path: string
+  Use for ledger entries, profit & loss statements, margins, and ROI.
+
+manufacturing_manager
+  action: "create_bom" | "explode" | "list" | "get" | "export" | "delete" (required)
+  bom_id, product: string; components: array of {name, qty_per_unit, unit_cost}; quantity: integer; output_path: string
+  Use for bills of materials and component requirement explosion.
+
+marketing_manager
+  action: "add_campaign" | "analyze" | "list" | "get" | "export" | "delete" (required)
+  campaign_id, channel: string; spend, revenue: number; impressions, clicks, conversions: integer; output_path: string
+  Use for ad performance analytics (CTR/CPC/CPA/ROAS), campaign ranking, and marketing exports.
+
 file_controller
   action: "write" | "create_file" | "read" | "list" | "delete" | "move" | "copy" | "find" | "disk_usage" (required)
   path: string — use "desktop" for Desktop folder

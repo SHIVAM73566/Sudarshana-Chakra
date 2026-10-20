@@ -3,20 +3,19 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-import os
 import re
 import shutil
 import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, quote_plus, urljoin, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
 
 try:
     from bs4 import BeautifulSoup
-except Exception as exc:  # pragma: no cover - dependency is already bundled, but keep graceful fallback
+except Exception:  # pragma: no cover - dependency is already bundled, but keep graceful fallback
     BeautifulSoup = None  # type: ignore[assignment]
 
 try:
@@ -960,7 +959,6 @@ def build_presentation_from_template(
     player=None,
 ) -> str:
     from pptx import Presentation
-    from pptx.enum.shapes import PP_PLACEHOLDER  # type: ignore
 
     prs = Presentation(str(template_path))
     _clear_presentation(prs)
@@ -1076,3 +1074,67 @@ def build_presentation_from_template(
         except Exception:
             pass
     return f"Presentation created: {output_path}"
+
+
+FEATURE_METADATA = {
+    "name": "ppt_template",
+    "description": (
+        "Create a professionally template-styled PowerPoint by automatically finding and "
+        "downloading a matching template online, then populating it with your content."
+    ),
+    "category": "office",
+    "parameters": {
+        "topic": "string (presentation topic/title)",
+        "subtitle": "string (optional)",
+        "outline": "string (newline-separated content points)",
+        "theme": "string (optional style hint)",
+        "slides": "array of {title, bullets, notes} (optional explicit slides)",
+        "auto_open": "boolean (default true)",
+    },
+}
+
+
+def execute(**kwargs) -> dict:
+    """Registry entry point for the ppt_template tool."""
+    import os as _os
+    from pathlib import Path as _Path
+
+    params = kwargs.get("parameters") if isinstance(kwargs.get("parameters"), dict) else kwargs
+    params = dict(params or {})
+    title = params.get("topic") or params.get("title") or params.get("description") or "Presentation"
+    subtitle = params.get("subtitle") or ""
+    outline = params.get("outline") or params.get("description") or ""
+    slides = params.get("slides") if isinstance(params.get("slides"), list) else None
+
+    profile = infer_presentation_profile(
+        title=title,
+        subtitle=subtitle,
+        theme_hint=params.get("theme") or "",
+        outline=outline,
+        slides=slides,
+    )
+    resolved = resolve_presentation_template(profile)
+    if not resolved:
+        return {"success": False, "error": "Could not find a suitable PowerPoint template online."}
+
+    if not slides:
+        bullets = [b for b in str(outline).split("\n") if b.strip()][:6] or ["Overview"]
+        slides = [{"title": title, "bullets": bullets}]
+
+    safe_name = (
+        "".join(ch for ch in str(title) if ch.isalnum() or ch in " _-").strip().replace(" ", "_")
+        or "presentation"
+    )
+    out_dir = _Path(_os.environ.get("LOCALAPPDATA", str(_Path.home()))) / "SudarshanaAI" / "presentations"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    output_path = out_dir / f"{safe_name}.pptx"
+
+    message = build_presentation_from_template(
+        template_path=_Path(resolved["path"]),
+        parameters=params,
+        profile=profile,
+        slides=slides,
+        output_path=output_path,
+        auto_open=bool(params.get("auto_open", True)),
+    )
+    return {"success": True, "message": message, "path": str(output_path)}

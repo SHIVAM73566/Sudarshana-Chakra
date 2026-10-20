@@ -117,6 +117,42 @@ class C:
     ICE_GHO   = "rgba(0, 229, 255, 0.15)"
     _listeners: list = []
 
+    # Named theme presets. Each entry defines the surface colours plus the accent.
+    # ``accent`` is applied through load_theme(); the remaining keys override the
+    # panel/background palette so themes feel structurally different, not just
+    # recoloured.
+    THEMES: dict = {
+        "Cyberpunk Obsidian": {
+            "accent": "#00e5ff",
+            "BG": "#04060a", "PANEL": "#0a0e16", "PANEL2": "#101826",
+            "TEXT": "#e6f7ff", "TEXT_DIM": "#7d8fa3", "TEXT_MED": "#b9c9db",
+            "BORDER": "rgba(0, 229, 255, 0.20)", "BORDER_B": "rgba(0, 229, 255, 0.45)",
+            "ACC": "#00e5ff", "ACC2": "#7cf9ff", "MUTED_C": "#ff2bd6",
+        },
+        "Golden Chakra": {
+            "accent": "#ffc400",
+            "BG": "#0a0703", "PANEL": "#151009", "PANEL2": "#1e170c",
+            "TEXT": "#fdf3dd", "TEXT_DIM": "#a8946f", "TEXT_MED": "#d8c39a",
+            "BORDER": "rgba(255, 196, 0, 0.22)", "BORDER_B": "rgba(255, 196, 0, 0.50)",
+            "ACC": "#ffc400", "ACC2": "#ffe08a", "MUTED_C": "#ff9d00",
+        },
+        "Minimal Dark": {
+            "accent": "#9aa4b2",
+            "BG": "#0b0b0d", "PANEL": "#141417", "PANEL2": "#1b1b1f",
+            "TEXT": "#e8e8ea", "TEXT_DIM": "#7a7a82", "TEXT_MED": "#b4b4bc",
+            "BORDER": "rgba(154, 164, 178, 0.18)", "BORDER_B": "rgba(154, 164, 178, 0.40)",
+            "ACC": "#9aa4b2", "ACC2": "#c7ced8", "MUTED_C": "#6f7885",
+        },
+        "Glassmorphism": {
+            "accent": "#8ab4ff",
+            "BG": "#0a0f1c", "PANEL": "rgba(20, 30, 55, 0.72)", "PANEL2": "rgba(30, 42, 72, 0.66)",
+            "TEXT": "#eef4ff", "TEXT_DIM": "#93a3c4", "TEXT_MED": "#c3d0ea",
+            "BORDER": "rgba(138, 180, 255, 0.24)", "BORDER_B": "rgba(138, 180, 255, 0.55)",
+            "ACC": "#8ab4ff", "ACC2": "#c3d8ff", "MUTED_C": "#77e0ff",
+        },
+    }
+
+
     @classmethod
     def register_listener(cls, callback):
         if callback not in cls._listeners:
@@ -175,11 +211,50 @@ class C:
             except Exception:
                 pass
 
+    @classmethod
+    def apply_named_theme(cls, name: str) -> str:
+        """Apply a named preset ("Cyberpunk Obsidian", "Golden Chakra",
+        "Minimal Dark", "Glassmorphism"). Returns the preset name actually used.
+
+        Presets override the surface palette (BG/PANEL/TEXT/BORDER) in addition to
+        the accent, so switching themes changes the whole feel of the app.
+        """
+        preset = cls.THEMES.get(str(name).strip())
+        if preset is None:
+            # Unknown name: treat it as a hex/word and delegate to load_theme.
+            cls.load_theme(str(name))
+            return str(name)
+        accent = preset.get("accent", cls.ACC)
+        # First derive accent-family colours (ACC/ACC2/BORDER from accent).
+        cls.load_theme(accent)
+        # Then layer the explicit surface overrides on top.
+        for key, value in preset.items():
+            if key == "accent":
+                continue
+            try:
+                setattr(cls, key, value)
+            except Exception:
+                continue
+        for cb in list(cls._listeners):
+            try:
+                cb()
+            except Exception:
+                pass
+        return str(name)
+
+    @classmethod
+    def theme_names(cls) -> list:
+        return list(cls.THEMES.keys())
+
 try:
     if APP_SETTINGS_FILE.exists():
         with open(APP_SETTINGS_FILE, "r", encoding="utf-8") as f:
             _global_settings = json.load(f)
-            C.load_theme(_global_settings.get("app_theme", "#ffffff"))
+            _boot_theme = _global_settings.get("app_theme", "#ffffff")
+            if _boot_theme in C.THEMES:
+                C.apply_named_theme(_boot_theme)
+            else:
+                C.load_theme(_boot_theme)
 except Exception:
     pass
 
@@ -11487,16 +11562,17 @@ class SystemConnectivityPage(QWidget):
         app_row.addWidget(self._set_app_name)
         ilay.addLayout(app_row)
 
-        # System Avatar (locked photo, editable name only)
+        # Companion Avatar (customisable photo + editable name)
         try:
             from core.avatar import (
                 get_avatar_pixmap as _av_pix,
                 AVATAR_LABEL as _AV_LABEL,
                 get_display_name as _av_get,
                 set_display_name as _av_set,
+                register_avatar_listener as _av_register,
             )
         except Exception:
-            _AV_LABEL = "\U0001F512 System Avatar (Locked / Permanent)"
+            _AV_LABEL = "\U0001F5BC\uFE0F Companion Avatar"
 
             def _av_get():
                 return "Guardian Avatar"
@@ -11509,12 +11585,21 @@ class SystemConnectivityPage(QWidget):
 
                 return QPixmap()
 
+            def _av_register(_fn):
+                return None
+
         avatar_row = QHBoxLayout()
         _av_pic = QLabel()
         _av_pic.setFixedSize(72, 72)
         _av_pic.setAlignment(Qt.AlignmentFlag.AlignCenter)
         _av_pic.setPixmap(_av_pix(72))
         avatar_row.addWidget(_av_pic)
+
+        def _refresh_avatar_pic():
+            try:
+                _av_pic.setPixmap(_av_pix(72))
+            except Exception:
+                pass
 
         _av_col = QVBoxLayout()
         _av_title = QLabel(_AV_LABEL)
@@ -11530,10 +11615,66 @@ class SystemConnectivityPage(QWidget):
         _av_name_row.addWidget(self._set_avatar_name)
         _av_col.addLayout(_av_name_row)
 
-        _av_note = QLabel("Portrait is permanently locked. Only the display name may be changed.")
+        _av_btn_row = QHBoxLayout()
+        _av_change_btn = QPushButton("Change Avatar Photo")
+        _av_reset_btn = QPushButton("Reset to Default")
+
+        def _on_change_avatar():
+            try:
+                from PyQt6.QtWidgets import QFileDialog
+                from core.avatar import set_custom_avatar
+            except Exception:
+                return
+            file_path, _ = QFileDialog.getOpenFileName(
+                self,
+                "Choose Avatar Image or 3D Model",
+                "",
+                "Avatar Files (*.png *.jpg *.jpeg *.bmp *.webp *.gif *.glb *.gltf *.obj *.fbx *.vrm);;"
+                "Images (*.png *.jpg *.jpeg *.bmp *.webp *.gif);;"
+                "3D Models (*.glb *.gltf *.obj *.fbx *.vrm);;All Files (*)",
+            )
+            if not file_path:
+                return
+            ok, message = set_custom_avatar(file_path)
+            _refresh_avatar_pic()
+            try:
+                if ok:
+                    ui_toast = getattr(self, "show_toast", None)
+                    if callable(ui_toast):
+                        ui_toast(message)
+                    else:
+                        from PyQt6.QtWidgets import QMessageBox
+
+                        QMessageBox.information(self, "Avatar", message)
+                else:
+                    from PyQt6.QtWidgets import QMessageBox
+
+                    QMessageBox.warning(self, "Avatar", message)
+            except Exception:
+                pass
+
+        def _on_reset_avatar():
+            try:
+                from core.avatar import clear_custom_avatar
+            except Exception:
+                return
+            clear_custom_avatar()
+            _refresh_avatar_pic()
+
+        _av_change_btn.clicked.connect(_on_change_avatar)
+        _av_reset_btn.clicked.connect(_on_reset_avatar)
+        _av_btn_row.addWidget(_av_change_btn)
+        _av_btn_row.addWidget(_av_reset_btn)
+        _av_btn_row.addStretch()
+        _av_col.addLayout(_av_btn_row)
+
+        _av_note = QLabel("Upload your own avatar: still image, animated GIF, or 3D model (GLB/GLTF/OBJ/FBX/VRM)."
+                          " Resets to the built-in portrait anytime.")
+        _av_note.setWordWrap(True)
         _av_note.setStyleSheet(f"color: {C.TEXT_DIM}; font-size: 11px;")
         _av_col.addWidget(_av_note)
 
+        _av_register(_refresh_avatar_pic)
         avatar_row.addLayout(_av_col)
         avatar_row.addStretch()
         ilay.addLayout(avatar_row)
@@ -11778,29 +11919,68 @@ class SystemConnectivityPage(QWidget):
         lay.addWidget(shortcuts)
 
         # App Theme
-        theme_card = self._card("App Theme", "Select the primary color theme for Sudarshana Chakra.")
+        theme_card = self._card("App Theme", "Choose a named look or pick a custom accent colour.")
         tl = theme_card.layout()
+
+        presets_row = QHBoxLayout()
+        presets_row.setSpacing(8)
+        for preset_name in C.theme_names():
+            preset_btn = QPushButton(preset_name)
+            preset_btn.setToolTip(f"Apply the {preset_name} theme")
+            try:
+                preset_btn.clicked.connect(lambda _=False, n=preset_name: self._apply_named_theme(n))
+            except Exception:
+                pass
+            presets_row.addWidget(preset_btn, 1)
+        tl.addLayout(presets_row)
+
         theme_row = QHBoxLayout()
-        theme_row.addWidget(QLabel("Primary Color:"))
+        theme_row.addWidget(QLabel("Custom Accent:"))
         
         self._pick_theme_btn = QPushButton("Pick Color Palette")
         self._pick_theme_btn.clicked.connect(self._pick_theme_color)
         
-        current_theme = "Gold"
+        current_theme = "Cyberpunk Obsidian"
         try:
             if APP_SETTINGS_FILE.exists():
                 with open(APP_SETTINGS_FILE, "r", encoding="utf-8") as f:
                     _d = json.load(f)
-                    current_theme = _d.get("app_theme", "Gold")
+                    current_theme = _d.get("app_theme", "Cyberpunk Obsidian")
         except Exception:
             pass
             
-        if current_theme.startswith("#"):
+        if isinstance(current_theme, str) and current_theme.startswith("#"):
             self._pick_theme_btn.setStyleSheet(f"background: {current_theme}; color: #ffffff;")
         
         theme_row.addWidget(self._pick_theme_btn, 1)
         tl.addLayout(theme_row)
         lay.addWidget(theme_card)
+
+        # Workspace Profile (CEO / CTO / SME / Personal)
+        workspace_card = self._card(
+            "Workspace Profile",
+            "Instantly adapt the agent's persona, depth and defaults to your working context.",
+        )
+        wl = workspace_card.layout()
+        self._workspace_status = QLabel("Active profile: —")
+        try:
+            self._workspace_status.setText(f"Active profile: {self._workspace_profile_label(self._active_workspace_key())}")
+        except Exception:
+            pass
+        wl.addWidget(self._workspace_status)
+
+        workspace_row = QHBoxLayout()
+        workspace_row.setSpacing(8)
+        for profile_key, profile_label in self._workspace_profiles():
+            p_btn = QPushButton(profile_label)
+            p_btn.setToolTip(f"Switch to the {profile_label} workspace")
+            try:
+                p_btn.clicked.connect(lambda _=False, k=profile_key: self._apply_workspace_profile(k))
+            except Exception:
+                pass
+            workspace_row.addWidget(p_btn, 1)
+        wl.addLayout(workspace_row)
+        lay.addWidget(workspace_card)
 
         # Startup animation
         anim = self._card("Startup Animation", "Control how the boot sequence behaves.")
@@ -12847,6 +13027,105 @@ class SystemConnectivityPage(QWidget):
             self._refresh_auto_heal_status()
         except Exception as e:
             self._ah_output_lbl.setText(f"Error repairing bug: {e}")
+
+    def _apply_named_theme(self, theme_name: str):
+        """Apply a named theme preset live (no restart) and persist the choice."""
+        try:
+            C.apply_named_theme(theme_name)
+        except Exception:
+            pass
+        settings = {}
+        try:
+            if APP_SETTINGS_FILE.exists():
+                with open(APP_SETTINGS_FILE, "r", encoding="utf-8") as f:
+                    settings = json.load(f)
+        except Exception:
+            settings = {}
+        settings["app_theme"] = theme_name
+        try:
+            with open(APP_SETTINGS_FILE, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=4)
+        except Exception:
+            pass
+        # Nudge every listener-backed widget to repaint with the new palette.
+        try:
+            from PyQt6.QtWidgets import QApplication
+            QApplication.processEvents()
+            for widget in QApplication.topLevelWidgets():
+                try:
+                    widget.style().unpolish(widget)
+                    widget.style().polish(widget)
+                    widget.update()
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        try:
+            self.write_log(f"THEME: Applied '{theme_name}'.")
+        except Exception:
+            pass
+
+    # ---- Workspace profiles (CEO / CTO / SME / Personal) ----------------- #
+
+    @staticmethod
+    def _workspace_profiles():
+        """Ordered (key, label) pairs for the workspace switcher."""
+        return [
+            ("ceo", "CEO"),
+            ("cto", "CTO"),
+            ("sme", "SME"),
+            ("personal", "Personal"),
+        ]
+
+    @staticmethod
+    def _workspace_persona_map():
+        """Maps workspace keys to the underlying persona-engine keys."""
+        return {
+            "ceo": "ceo",
+            "cto": "engineer",
+            "sme": "enterprise",
+            "personal": "office",
+        }
+
+    def _active_workspace_key(self) -> str:
+        """Return the workspace key matching the active persona, defaulting to SME."""
+        try:
+            from core import persona as _persona_engine
+            active = _persona_engine.get_active_key()
+        except Exception:
+            return "sme"
+        for ws_key, persona_key in self._workspace_persona_map().items():
+            if persona_key == active:
+                return ws_key
+        return "sme"
+
+    def _workspace_profile_label(self, workspace_key: str) -> str:
+        for key, label in self._workspace_profiles():
+            if key == workspace_key:
+                return label
+        return "SME"
+
+    def _apply_workspace_profile(self, workspace_key: str):
+        """Switch workspace profile live: updates the persona engine and status label."""
+        persona_key = self._workspace_persona_map().get(str(workspace_key).strip().lower(), "enterprise")
+        try:
+            from core import persona as _persona_engine
+            resolved = _persona_engine.set_active(persona_key)
+            meta = _persona_engine.get_persona(resolved)
+            label = self._workspace_profile_label(workspace_key)
+            try:
+                self._workspace_status.setText(f"Active profile: {label} ({meta.get('name', resolved)})")
+            except Exception:
+                pass
+            try:
+                self.write_log(f"WORKSPACE: Switched to {label} profile ({meta.get('name', resolved)}).")
+            except Exception:
+                pass
+        except Exception as e:
+            try:
+                self.write_log(f"WORKSPACE: Failed to switch profile: {e}")
+            except Exception:
+                pass
 
     def _pick_theme_color(self):
         color = QColorDialog.getColor(QColor(C.PRI), self, "Select App Theme Color")
