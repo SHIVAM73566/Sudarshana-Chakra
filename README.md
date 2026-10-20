@@ -20,6 +20,33 @@
 
 **Sudarshana Chakra** is a next-generation desktop intelligence built to function like an authentic JARVIS workstation. Combining real-time bi-directional native voice audio, multimodal computer vision, autonomous code self-evolution, and local system orchestrations, Sudarshana Chakra transforms your Windows PC into a self-evolving command center.
 
+> **Keywords:** AI desktop assistant · JARVIS for Windows · autonomous AI agent · self-evolving AI · multimodal voice assistant · PyQt6 AI app · Gemini Live voice · Model Context Protocol MCP · computer vision automation · AI desktop automation · local-first AI · Gemini · NVIDIA NIM.
+
+---
+
+## ⚡ Quick Install (One Command)
+
+Get running in under 5 minutes on Windows 10/11.
+
+```powershell
+git clone https://github.com/SHIVAM73566/Sudarshana-Chakra.git
+cd Sudarshana-Chakra
+python setup.py
+```
+
+That's it. `setup.py` creates the virtual environment, installs every dependency, prepares the bundled Playwright browser, and sets up your `.env` from the template.
+
+Then add your API key and launch:
+
+```powershell
+copy .env.example .env      # open .env and paste your GEMINI_API_KEY
+python main.py
+```
+
+Prefer no terminal? Just double-click **`start_sudarshana.bat`** — it runs the whole setup and starts the app for you.
+
+> **No API key yet?** Sudarshana still launches and runs all local features. Add a free [Google AI Studio](https://aistudio.google.com/app/apikey) key later to unlock live voice and vision.
+
 ---
 
 ## ⚡ What's New in Sudarshana Chakra
@@ -125,6 +152,8 @@
 ---
 
 ## 🚀 Quick Start
+
+> Short on time? Jump to **[⚡ Quick Install](#-quick-install-one-command)** above — one command sets everything up.
 
 ### Prerequisites
 - **Windows 10 / 11** (64-bit)
