@@ -11,11 +11,6 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    import google.generativeai as genai
-
 
 def _base_dir() -> Path:
     return Path(__file__).resolve().parent
@@ -250,7 +245,6 @@ class WorkspaceStore:
         def _do_summary():
             try:
                 from google import genai
-                base_dir = Path(__file__).resolve().parent
                 key_path = get_user_data_dir() / "config" / "api_keys.json"
                 with open(key_path, "r", encoding="utf-8") as f:
                     api_key = json.load(f)["gemini_api_key"]

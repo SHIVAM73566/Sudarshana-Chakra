@@ -260,6 +260,11 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
         except Exception:
             pass
 
+    if tool in ("deep_research", "autonomous_research", "research_agent"):
+        from core.deep_research import execute as _deep_research_execute
+        result = _deep_research_execute(parameters=parameters or {}, player=player)
+        return str(result.get("strategy") or result.get("summary") or "Research complete.")
+
     if tool in ("inventory_manager", "inventory", "stock_manager", "supply_inventory",
                 "procurement_manager", "procurement", "purchase_orders", "supplier_manager", "supply_chain",
                 "finance_manager", "finance", "accounting", "ledger", "profit_and_loss",
@@ -634,6 +639,19 @@ def _call_tool(tool: str, parameters: dict, speak: Callable | None, player: Any 
                 return out_str
         except Exception as exc:
             return f"Feature '{tool}' failed: {exc}"
+        # Unknown tool: trigger the Autonomous Deep Research Subroutine instead of
+        # failing or guessing. It synthesises a strategy and never raises.
+        try:
+            from core.deep_research import DeepResearch
+
+            research_result = DeepResearch.run(tool if " " in str(tool) else f"accomplish: {tool}", player=player)
+            strategy = str(research_result.get("strategy") or "").strip()
+            if strategy:
+                if player and hasattr(player, "write_log"):
+                    player.write_log(f"Sudarshana Chakra [deep_research]:\n{strategy[:1500]}")
+                return strategy
+        except Exception as exc:
+            print(f"[Executor] deep research fallback failed: {exc}")
         print(f"[Executor] ⚠️ Unknown tool '{tool}' — no developer fallback is configured")
         return f"Unknown action: {tool}"
 

@@ -2376,6 +2376,23 @@ TOOL_DECLARATIONS = [
             "required": []
         }
     },
+    {
+        "name": "deep_research",
+        "description": (
+            "Autonomous deep-research subroutine. Use for unknown, ambiguous, or unfamiliar tasks: "
+            "decomposes the goal into sub-questions, gathers web + local evidence, synthesises a "
+            "step-by-step execution strategy, and can forge a new skill. Never fails or guesses."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "goal": {"type": "STRING", "description": "The unknown/ambiguous task or question to research."},
+                "allow_forge": {"type": "BOOLEAN", "description": "Synthesise a skill when the capability is missing."},
+                "max_subtasks": {"type": "INTEGER", "description": "Maximum number of sub-questions (default 5)."}
+            },
+            "required": ["goal"]
+        }
+    },
 ]
 
 

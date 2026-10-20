@@ -170,6 +170,15 @@ marketing_manager
   campaign_id, channel: string; spend, revenue: number; impressions, clicks, conversions: integer; output_path: string
   Use for ad performance analytics (CTR/CPC/CPA/ROAS), campaign ranking, and marketing exports.
 
+deep_research
+  goal: string (required) — the unknown, ambiguous, or unfamiliar task/domain to research
+  allow_forge: boolean (optional) — synthesise a reusable skill when the capability is missing
+  max_subtasks: integer (optional, default 5)
+  Use deep_research when the request is ambiguous, spans an unfamiliar domain, or has no
+  matching tool. It breaks the goal into sub-questions, gathers web + local evidence and
+  returns a step-by-step strategy instead of guessing. Prefer skill_forge only when the user
+  explicitly wants a NEW reusable capability built.
+
 file_controller
   action: "write" | "create_file" | "read" | "list" | "delete" | "move" | "copy" | "find" | "disk_usage" (required)
   path: string — use "desktop" for Desktop folder
