@@ -45,7 +45,98 @@ python main.py
 
 Prefer no terminal? Just double-click **`start_sudarshana.bat`** — it runs the whole setup and starts the app for you.
 
+> New to this? See the **[🧑💻 Easy Installation Guide](#-easy-installation-guide-step-by-step)** below for a beginner-friendly walkthrough with troubleshooting.
+
 > **No API key yet?** Sudarshana still launches and runs all local features. Add a free [Google AI Studio](https://aistudio.google.com/app/apikey) key later to unlock live voice and vision.
+
+---
+
+## 🧑💻 Easy Installation Guide (Step by Step)
+
+Never installed a Python app before? Follow this. Everything is automatic — you only need **Windows 10/11** and an internet connection.
+
+### Method 1 — Double-Click (Easiest, zero terminal)
+
+1. **Download the code.** On the [repository page](https://github.com/SHIVAM73566/Sudarshana-Chakra), click the green **`Code`** button → **`Download ZIP`**.
+2. **Unzip** it anywhere (e.g. `C:\Sudarshana-Chakra`). Right-click the ZIP → **Extract All**.
+3. **Double-click `start_sudarshana.bat`.**
+
+That's it. A black window will open and handle everything automatically:
+
+| What it does for you | Details |
+| :--- | :--- |
+| ✅ Installs **Python 3.11** | Only if you don't already have it (silent, official installer). |
+| ✅ Installs **Node.js 20 LTS** | Required by the Spotify MCP server. |
+| ✅ Creates the **virtual environment** (`.venv`) | Isolated, so nothing on your PC is touched. |
+| ✅ Installs **all Python dependencies** | From `requirements.txt`. |
+| ✅ Installs the **Playwright browser** | For automation & browser control. |
+| ✅ **Launches Sudarshana Chakra** | The app opens by itself when ready. |
+
+> Windows may show a **"Do you want to allow this app..."** prompt because the installer needs admin rights to install Python/Node. Click **Yes**.
+
+### Method 2 — One Command (for Git users)
+
+```powershell
+git clone https://github.com/SHIVAM73566/Sudarshana-Chakra.git
+cd Sudarshana-Chakra
+python setup.py
+python main.py
+```
+
+### Method 3 — Manual (full control)
+
+Use this if you already manage your own Python environment.
+
+```powershell
+# 1. Get the code
+git clone https://github.com/SHIVAM73566/Sudarshana-Chakra.git
+cd Sudarshana-Chakra
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# 3. Install dependencies + browser
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m playwright install
+
+# 4. Add your API key
+copy .env.example .env      # then open .env and paste GEMINI_API_KEY=...
+
+# 5. Launch
+python main.py
+```
+
+### Adding Your API Key
+
+Sudarshana is **local-first and works without any key**, but live voice and vision need a **Google Gemini** key:
+
+1. Get a free key at **[Google AI Studio](https://aistudio.google.com/app/apikey)**.
+2. Open the `.env` file in the app folder (or use **Settings → API Keys** in the app) and set:
+   ```ini
+   GEMINI_API_KEY=your_key_here
+   ```
+3. Restart the app. Done.
+
+### ✅ Verify Your Install
+
+After launching, you should see the Sudarshana Chakra window with the glowing core. Say or type:
+
+> *"Sudarshana, check system resources"*
+
+If you get a response, your installation is complete.
+
+### 🛠️ Troubleshooting
+
+| Problem | Fix |
+| :--- | :--- |
+| **`python` is not recognized** | Re-run `start_sudarshana.bat` (it installs Python for you), then reopen your terminal. |
+| **`git` is not recognized** | Use **Method 1** (double-click), or install [Git for Windows](https://git-scm.com/download/win). |
+| **App closes immediately** | Run `python main.py` in a terminal to see the error, and check `logs\crash_*.log`. |
+| **Voice not working** | Confirm `GEMINI_API_KEY` is set and your microphone is allowed in Windows Settings → Privacy. |
+| **Playwright errors** | Re-run: `.\.venv\Scripts\python.exe -m playwright install`. |
+| **Permission / admin prompt** | Click **Yes** — Python & Node installs require admin rights. |
 
 ---
 
