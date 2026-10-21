@@ -548,7 +548,7 @@ For commercial/OEM or redistribution rights, contact the author through the offi
 
 Contributions, bug reports and feature ideas are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md). For security issues, follow [SECURITY.md](SECURITY.md).
 
-📚 More docs: **[Architecture](docs/ARCHITECTURE.md)** · **[FAQ](docs/FAQ.md)** · **[Support](SUPPORT.md)** · **[Changelog](CHANGELOG.md)**
+📚 More docs: **[Architecture](docs/ARCHITECTURE.md)** · **[FAQ](docs/FAQ.md)** · **[Showcase & Press Kit](docs/SHOWCASE.md)** · **[Demo recording guide](DEMO.md)** · **[Support](SUPPORT.md)** · **[Changelog](CHANGELOG.md)**
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
