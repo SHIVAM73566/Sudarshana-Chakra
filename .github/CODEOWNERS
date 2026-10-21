@@ -1,0 +1,10 @@
+# Code owners — review requests are auto-assigned.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+*       @SHIVAM73566
+
+# Guarded brand / licensing / integrity files — owner review required.
+/core/license_guard.py      @SHIVAM73566
+/core/license_providers.py  @SHIVAM73566
+/core/brand.py              @SHIVAM73566
+/core/anti_tamper.py        @SHIVAM73566

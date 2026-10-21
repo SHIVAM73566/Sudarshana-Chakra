@@ -13,15 +13,51 @@
 [![Gemini 2.5](https://img.shields.io/badge/Model-Gemini%202.5%20Flash%20Native%20Audio-orange?logo=google&logoColor=white)](https://ai.google.dev/)
 [![MCP](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol-purple)](https://modelcontextprotocol.io/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
+
 [![CI](https://github.com/SHIVAM73566/Sudarshana-Chakra/actions/workflows/ci.yml/badge.svg)](https://github.com/SHIVAM73566/Sudarshana-Chakra/actions/workflows/ci.yml)
+[![Last commit](https://img.shields.io/github/last-commit/SHIVAM73566/Sudarshana-Chakra?color=blue)](https://github.com/SHIVAM73566/Sudarshana-Chakra/commits/main)
+[![Commit activity](https://img.shields.io/github/commit-activity/m/SHIVAM73566/Sudarshana-Chakra)](https://github.com/SHIVAM73566/Sudarshana-Chakra/graphs/commit-activity)
+[![Contributors](https://img.shields.io/github/contributors/SHIVAM73566/Sudarshana-Chakra)](https://github.com/SHIVAM73566/Sudarshana-Chakra/graphs/contributors)
+[![Issues](https://img.shields.io/github/issues/SHIVAM73566/Sudarshana-Chakra)](https://github.com/SHIVAM73566/Sudarshana-Chakra/issues)
+[![Repo size](https://img.shields.io/github/repo-size/SHIVAM73566/Sudarshana-Chakra)](https://github.com/SHIVAM73566/Sudarshana-Chakra)
+[![Code style](https://img.shields.io/badge/code%20style-zero--error%20gate-brightgreen)](core/auto_deploy.py)
+
 [![License](https://img.shields.io/badge/License-Commercial%20Source--Available-yellow)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/SHIVAM73566/Sudarshana-Chakra/pulls)
+[![Made with Python](https://img.shields.io/badge/Made%20with-Python%20%E2%9D%A4-3776AB?logo=python&logoColor=white)](https://python.org)
 [![Stars](https://img.shields.io/github/stars/SHIVAM73566/Sudarshana-Chakra?style=social)](https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers)
 [![Forks](https://img.shields.io/github/forks/SHIVAM73566/Sudarshana-Chakra?style=social)](https://github.com/SHIVAM73566/Sudarshana-Chakra/network/members)
+[![Watchers](https://img.shields.io/github/watchers/SHIVAM73566/Sudarshana-Chakra?style=social)](https://github.com/SHIVAM73566/Sudarshana-Chakra/watchers)
 
 **⭐ If Sudarshana Chakra is useful to you, [star the repo](https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers) — it takes one click and helps a lot!**
 
+**🏠 [Overview](#-overview) · 📸 [Demo](#-demo--screenshots) · ⚡ [Quick Install](#-quick-install-one-command) · 🧑💻 [Guide](#-easy-installation-guide-step-by-step) · 🥊 [Compare](#-how-it-compares) · 🤝 [Contribute](CONTRIBUTING.md) · 💬 [Discussions](https://github.com/SHIVAM73566/Sudarshana-Chakra/discussions)**
+
 </div>
+
+---
+
+## 📖 Table of Contents
+
+<details>
+<summary>Click to expand</summary>
+
+- [🌌 Overview](#-overview)
+- [📸 Demo & Screenshots](#-demo--screenshots)
+- [⭐ Why Star This Project?](#-why-star-this-project)
+- [🥊 How It Compares](#-how-it-compares)
+- [🌟 Star History](#-star-history)
+- [⚡ Quick Install (One Command)](#-quick-install-one-command)
+- [🧑💻 Easy Installation Guide](#-easy-installation-guide-step-by-step)
+- [⚡ What's New](#-whats-new-in-sudarshana-chakra)
+- [🎮 Voice & Command Cheat Sheet](#-voice--command-cheat-sheet)
+- [🏗️ Architecture](#-architecture)
+- [🔒 Security & Privacy](#-security--privacy)
+- [📦 Building a Release Package](#-building-a-release-package)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+
+</details>
 
 ---
 
@@ -511,6 +547,8 @@ For commercial/OEM or redistribution rights, contact the author through the offi
 ## 🤝 Contributing
 
 Contributions, bug reports and feature ideas are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md). For security issues, follow [SECURITY.md](SECURITY.md).
+
+📚 More docs: **[Architecture](docs/ARCHITECTURE.md)** · **[FAQ](docs/FAQ.md)** · **[Support](SUPPORT.md)** · **[Changelog](CHANGELOG.md)**
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 

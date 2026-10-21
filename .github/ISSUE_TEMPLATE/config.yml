@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Ideas (Discussions)
+    url: https://github.com/SHIVAM73566/Sudarshana-Chakra/discussions
+    about: Ask questions, share setups and ideas with the community.
+  - name: 🔐 Report a security vulnerability
+    url: https://github.com/SHIVAM73566/Sudarshana-Chakra/security/advisories/new
+    about: Please report security issues privately — do not open a public issue.
+  - name: ⭐ Star the project
+    url: https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers
+    about: Enjoying Sudarshana Chakra? A star helps others discover it.

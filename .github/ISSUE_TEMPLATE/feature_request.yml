@@ -1,0 +1,45 @@
+name: Feature request
+description: Suggest an idea for Sudarshana Chakra
+title: "[Feature]: "
+labels: ["enhancement"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea? We'd love to hear it. Please describe the problem before the solution.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Voice / Audio
+        - Vision / Screen
+        - Desktop automation
+        - Business verticals
+        - Browser / MCP
+        - Licensing
+        - UI / UX
+        - Self-evolution / Self-healing
+        - Other
+    validations:
+      required: true

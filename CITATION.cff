@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use Sudarshana Chakra in your work, please cite it as below."
+title: "Sudarshana Chakra: Autonomous Desktop Operating Intelligence"
+abstract: >-
+  Sudarshana Chakra is a self-evolving, multimodal personal AI desktop
+  environment for Windows. It combines real-time native voice, computer vision,
+  autonomous multi-step desktop automation, on-the-fly tool synthesis, and
+  self-healing code to act as a Jarvis-style command center. It ships with
+  100+ built-in tools including enterprise business verticals (inventory,
+  procurement, finance, manufacturing, marketing) and autonomous deep research.
+type: software
+authors:
+  - name: "Sudarshana Chakra"
+    alias: SHIVAM73566
+repository-code: "https://github.com/SHIVAM73566/Sudarshana-Chakra"
+url: "https://github.com/SHIVAM73566/Sudarshana-Chakra"
+license-url: "https://github.com/SHIVAM73566/Sudarshana-Chakra/blob/main/LICENSE"
+keywords:
+  - ai-assistant
+  - jarvis
+  - desktop-automation
+  - autonomous-agents
+  - voice-assistant
+  - computer-vision
+  - pyqt6
+  - gemini
+  - model-context-protocol
+  - self-evolving-ai
+  - local-first
+version: 1.0.0
+date-released: "2026-10-21"
