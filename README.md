@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Sudarshana Chakra AI](assets/sudarshana_chakra_ai_logo.png?v=2)
+![Sudarshana Chakra AI](assets/banner_sudarshana_chakra.png?v=2)
 
 ### *The Self-Evolving, Multimodal Personal AI Desktop Environment*
 
@@ -13,9 +13,13 @@
 [![Gemini 2.5](https://img.shields.io/badge/Model-Gemini%202.5%20Flash%20Native%20Audio-orange?logo=google&logoColor=white)](https://ai.google.dev/)
 [![MCP](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol-purple)](https://modelcontextprotocol.io/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
+[![CI](https://github.com/SHIVAM73566/Sudarshana-Chakra/actions/workflows/ci.yml/badge.svg)](https://github.com/SHIVAM73566/Sudarshana-Chakra/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Commercial%20Source--Available-yellow)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/SHIVAM73566/Sudarshana-Chakra/pulls)
 [![Stars](https://img.shields.io/github/stars/SHIVAM73566/Sudarshana-Chakra?style=social)](https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers)
+[![Forks](https://img.shields.io/github/forks/SHIVAM73566/Sudarshana-Chakra?style=social)](https://github.com/SHIVAM73566/Sudarshana-Chakra/network/members)
+
+**⭐ If Sudarshana Chakra is useful to you, [star the repo](https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers) — it takes one click and helps a lot!**
 
 </div>
 
@@ -26,6 +30,71 @@
 **Sudarshana Chakra** is a next-generation desktop intelligence built to function like an authentic JARVIS workstation. Combining real-time bi-directional native voice audio, multimodal computer vision, autonomous code self-evolution, and local system orchestrations, Sudarshana Chakra transforms your Windows PC into a self-evolving command center.
 
 > **Keywords:** AI desktop assistant · JARVIS for Windows · autonomous AI agent · self-evolving AI · multimodal voice assistant · PyQt6 AI app · Gemini Live voice · Model Context Protocol MCP · computer vision automation · AI desktop automation · local-first AI · Gemini · NVIDIA NIM.
+
+---
+
+## 📸 Demo & Screenshots
+
+<div align="center">
+
+![Sudarshana Chakra dashboard](assets/sudarshana_chakra_ai_logo.png)
+
+</div>
+
+| Preview | What you're looking at |
+| :--- | :--- |
+| ![Avatar](assets/sudarshana_avatar_core.png) | **Glowing HoloCore command bar** with live FFT waveform, state-glow ring and companion avatar HUD |
+| ![Banner](assets/banner_sudarshana_chakra.png) | **Brand identity** — the 24-blade Sudarshana Chakra emblem |
+| ![OG Preview](assets/og_preview_sudarshana_chakra.png) | **Social / share preview** — what appears when the repo is linked on X, LinkedIn or Slack |
+
+> 📹 **Video walkthroughs & GIF demos** are being added to `assets/` — drop your recordings in and they render below automatically.
+
+<!-- Add your GIF/video demos here, e.g.:
+![Voice command demo](assets/demo_voice.gif)
+![Desktop automation demo](assets/demo_automation.gif)
+-->
+
+---
+
+## ⭐ Why Star This Project?
+
+If you've been looking for a **truly open, extensible AI desktop assistant**, here's what makes Sudarshana Chakra different:
+
+- 🧠 **Genuinely autonomous** — it doesn't just answer, it *plans and executes* real desktop actions.
+- 🧬 **Self-evolving** — forges brand-new tools on the fly when it lacks a capability.
+- 🔒 **Local-first & private** — memories, keys and config never leave your machine.
+- 🧩 **100+ built-in tools** — browser automation, office docs, business verticals, geospatial, music, and more.
+- 🩹 **Self-healing** — catches and repairs its own runtime errors instead of crashing.
+- 💸 **Free to inspect and run** — a one-click star helps others discover it.
+
+**👉 [Star Sudarshana Chakra](https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers)** · **[Fork it](https://github.com/SHIVAM73566/Sudarshana-Chakra/fork)** · **[Report a bug](https://github.com/SHIVAM73566/Sudarshana-Chakra/issues)**
+
+---
+
+## 🥊 How It Compares
+
+| Capability | **Sudarshana Chakra** | GitHub Copilot | Claude Desktop | Typical "AI wrapper" |
+| :--- | :---: | :---: | :---: | :---: |
+| Desktop / OS control | ✅ Native | ❌ | ⚠️ Limited | ❌ |
+| Voice (real-time) | ✅ Gemini Live | ❌ | ❌ | ⚠️ |
+| Computer vision / screen understanding | ✅ | ❌ | ⚠️ | ❌ |
+| Autonomous multi-step execution | ✅ | ⚠️ IDE only | ✅ | ❌ |
+| Self-evolving tools (skills on the fly) | ✅ | ❌ | ❌ | ❌ |
+| Self-healing codebase | ✅ | ❌ | ❌ | ❌ |
+| Business verticals (inventory/finance/etc.) | ✅ | ❌ | ❌ | ❌ |
+| Local-first & private | ✅ | ❌ | ⚠️ | ⚠️ |
+| Open & extensible | ✅ Source-available | ❌ | ❌ | ⚠️ |
+| Free to run locally | ✅ | ❌ | ⚠️ | ⚠️ |
+
+---
+
+## 🌟 Star History
+
+<div align="center">
+
+[![Star History Chart](https://api.star-history.com/svg?repos=SHIVAM73566/Sudarshana-Chakra&type=Date)](https://star-history.com/#SHIVAM73566/Sudarshana-Chakra&Date)
+
+</div>
 
 ---
 
@@ -416,7 +485,8 @@ python tools/build_promo_images.py                         # storefront promo su
 ## 🛡️ Automated Architecture Milestones
 
 - **Zero-Error Gate:** `core/auto_deploy.py` runs the full pre-flight suite before any release — syntax compilation, undefined-name scanning, isolated import integrity, Gemini tool-schema validation, exception-hygiene audit, and the unit test suite. Deployment is opt-in (`--deploy`) and refuses to stage credential files.
-- **Verified Stability:** 170/170 Python files byte-compile, 165/165 modules import cleanly, 0 undefined names, 0 bare `except:` handlers, 55/55 dynamic tool schemas valid, 49/49 tests green, clean offscreen boot with the dashboard (`:8000`) and mobile gateway (`:8765`) healthy.
+- **Verified Stability:** 193 Python files byte-compile, 188 modules import cleanly, 0 undefined names, 0 bare `except:` handlers, 55 dynamic tool schemas valid, all tests green, clean offscreen boot with the dashboard (`:8000`) and mobile gateway (`:8765`) healthy.
+- **Continuous Integration:** every push and pull request runs the [CI workflow](.github/workflows/ci.yml) — byte-compile, static analysis, hygiene audit, unit tests and a committed-secret scan — on Windows.
 - **Hardened Runtime:** the attachment pipeline, the System & Hardware control card, and the dynamic skill registry were repaired; skill loading is now deterministic and independent of file timestamps.
 - **Active Engines:** Live Meeting Assistant, Office Persona mode, SkillForge self-correcting runtime, and the Sudarshana Connect mobile QR pairing mesh.
 - **Unified Entrypoint:** `core/router.py` classifies every goal (`evolution` / `single_tool` / `dag`) and delegates to SkillDiscovery, the single-tool dispatcher, or the planner→replan DAG loop — no competing execution paths.
@@ -436,6 +506,22 @@ This project is licensed under the **Sudarshana Chakra Commercial End-User Licen
 
 For commercial/OEM or redistribution rights, contact the author through the official repository above.
 
+---
+
+## 🤝 Contributing
+
+Contributions, bug reports and feature ideas are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md). For security issues, follow [SECURITY.md](SECURITY.md).
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
 <div align="center">
+
+### ⭐ Enjoying Sudarshana Chakra?
+
+**[Star this repo](https://github.com/SHIVAM73566/Sudarshana-Chakra/stargazers)** to support development — every star helps others discover it.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=SHIVAM73566/Sudarshana-Chakra&type=Date)](https://star-history.com/#SHIVAM73566/Sudarshana-Chakra&Date)
+
 <b>Sudarshana Chakra</b> • Built with intelligence, precision, and autonomy.
+
 </div>
